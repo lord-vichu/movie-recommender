@@ -293,3 +293,201 @@ button.ghost{
 .similar-movie-card img{width:100%;height:180px;object-fit:cover;border-radius:6px;background:#111}
 .similar-movie-card .movie-title{display:block;margin-top:6px;font-size:12px;color:var(--text);font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .similar-movie-card .movie-year{display:block;font-size:11px;color:var(--muted);margin-top:3px}
+
+/* --- Mobile / Tablet Optimizations --- */
+@media (max-width: 768px) {
+  body {
+    padding: 12px;
+  }
+  
+  .wrap {
+    padding: 16px;
+  }
+
+  /* Header adjustments */
+  header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  
+  header h1 {
+    font-size: 22px;
+  }
+
+  /* Controls layout for touch */
+  .controls {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .control {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .actions {
+    flex-wrap: wrap;
+    justify-content: stretch;
+    width: 100%;
+    margin-top: 8px;
+  }
+
+  .actions button {
+    flex: 1 1 auto; /* Grow to fill space */
+    text-align: center;
+    justify-content: center;
+    padding: 12px; /* Larger touch target */
+  }
+
+  /* Make recommended button stand out and full width */
+  #recommend {
+    flex: 1 1 100%;
+    order: -1; /* Put recommendation button first in actions on mobile */
+    margin-bottom: 8px;
+  }
+
+  /* Two-column grid for results on mobile */
+  .results {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+
+  /* Switch card to vertical layout for the 2-column grid */
+  .card {
+    flex-direction: column;
+    padding: 0;
+    overflow: hidden;
+    min-height: auto;
+  }
+
+  .poster {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 2/3;
+    border-radius: 0;
+  }
+  
+  .poster img {
+    border-radius: 0;
+  }
+
+  .meta {
+    padding: 10px;
+    width: 100%;
+  }
+
+  .meta h3 {
+    font-size: 14px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+
+  .rating {
+    font-size: 11px;
+    padding: 2px 6px;
+  }
+  
+  .meta p {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    font-size: 12px;
+  }
+
+  .chip {
+    display: none; /* Hide chips on mobile card view to save space */
+  }
+
+  .fav-btn, .user-rating {
+    top: 6px;
+    right: 6px;
+    left: auto;
+  }
+  
+  .fav-btn {
+    left: 6px;
+    right: auto;
+    background: rgba(0,0,0,0.3);
+    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Quick View Modal adjustments */
+  #quickView div[style*="background:var(--card)"] {
+    width: 95% !important;
+    max-height: 90vh !important;
+  }
+
+  #quickView > div > div[style*="display:flex"] {
+    flex-direction: column !important;
+  }
+
+  #qPoster {
+    width: 100px !important;
+    height: 150px !important;
+    margin: 0 auto;
+  }
+
+  #qTitle {
+    text-align: center;
+  }
+
+  #qMeta {
+    text-align: center;
+    justify-content: center;
+  }
+  
+  #quickView button {
+    flex: 1 1 45%;
+  }
+
+  /* Person Modal */
+  .person-modal {
+    width: 95%;
+  }
+  
+  .person-modal .profile {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .person-modal img.profile-pic {
+    width: 120px;
+    height: 180px;
+  }
+
+  .person-modal .bio {
+    text-align: left;
+    max-height: 200px;
+    overflow-y: auto;
+  }
+}
+
+/* Extra small devices */
+@media (max-width: 380px) {
+  .results {
+    grid-template-columns: 1fr; /* Back to 1 column for very small screens */
+  }
+  
+  .card {
+    flex-direction: row; /* Horizontal again for 1 column */
+  }
+  
+  .poster {
+    width: 80px;
+    height: 120px;
+    border-radius: 6px 0 0 6px;
+  }
+  
+  .meta {
+    padding: 8px;
+  }
+}
+
