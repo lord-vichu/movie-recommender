@@ -357,57 +357,99 @@ def discover_movies(request):
         
         movies = []
         
-        # If there's a specific search query, try TMDb search first with fuzzy matching
+        # If there's a specific search query, use aggressive fuzzy matching
         if search_query:
-            # Try exact search first
-            search_response = requests.get(
-                f'{settings.TMDB_BASE_URL}/search/movie',
-                params={
-                    'api_key': settings.TMDB_API_KEY,
-                    'query': search_query,
-                    'page': 1
-                },
-                timeout=10
-            )
-            
             tmdb_results = []
-            if search_response.status_code == 200:
-                search_data = search_response.json()
-                tmdb_results = search_data.get('results', [])
+            search_terms = [search_query]
             
-            # If no exact results, try common misspellings or variations
-            if len(tmdb_results) == 0:
-                # Try searching with alternative spellings
-                variations = [
-                    search_query.replace('tion', 'sion'),
-                    search_query.replace('sion', 'tion'),
-                    search_query.replace('er', 'or'),
-                    search_query.replace('or', 'er'),
-                ]
-                
-                for variation in variations:
-                    if variation != search_query:
-                        var_response = requests.get(
+            # Generate search variations for better matching
+            query_lower = search_query.lower()
+            
+            # Word-by-word search for multi-word queries
+            if ' ' in search_query:
+                words = search_query.split()
+                # Try each word individually
+                search_terms.extend(words)
+                # Try combinations
+                if len(words) >= 2:
+                    search_terms.append(' '.join(words[:2]))  # First two words
+                    search_terms.append(' '.join(words[-2:]))  # Last two words
+            
+            # Common spelling variations
+            variations = [
+                query_lower.replace('tion', 'sion'),
+                query_lower.replace('sion', 'tion'),
+                query_lower.replace('er', 'or'),
+                query_lower.replace('or', 'er'),
+                query_lower.replace('ie', 'y'),
+                query_lower.replace('y', 'ie'),
+                query_lower.replace('ph', 'f'),
+                query_lower.replace('f', 'ph'),
+                query_lower.replace('c', 'k'),
+                query_lower.replace('k', 'c'),
+            ]
+            search_terms.extend([v for v in variations if v != query_lower])
+            
+            # Remove duplicates
+            search_terms = list(dict.fromkeys(search_terms))
+            
+            # Search TMDb with all variations (limit to first 10 terms to avoid too many requests)
+            seen_ids = set()
+            for term in search_terms[:10]:
+                try:
+                    # Search multiple pages for each term
+                    for page in range(1, 3):  # Search 2 pages per term
+                        search_response = requests.get(
                             f'{settings.TMDB_BASE_URL}/search/movie',
                             params={
                                 'api_key': settings.TMDB_API_KEY,
-                                'query': variation,
-                                'page': 1
+                                'query': term,
+                                'page': page
                             },
                             timeout=10
                         )
-                        if var_response.status_code == 200:
-                            var_data = var_response.json()
-                            tmdb_results.extend(var_data.get('results', []))
-                            if len(tmdb_results) > 0:
+                        
+                        if search_response.status_code == 200:
+                            search_data = search_response.json()
+                            results = search_data.get('results', [])
+                            
+                            for movie in results:
+                                movie_id = movie.get('id')
+                                if movie_id not in seen_ids:
+                                    seen_ids.add(movie_id)
+                                    tmdb_results.append(movie)
+                            
+                            # If we found good results, no need to search more pages
+                            if len(results) > 15:
                                 break
+                except Exception as e:
+                    print(f"Search error for term '{term}': {e}")
+                    continue
+                
+                # Stop if we have enough results
+                if len(tmdb_results) > 50:
+                    break
             
-            # Score and sort results by similarity to search query
+            # Score ALL results by similarity (more lenient threshold)
             scored_results = []
             for movie in tmdb_results:
-                title = movie.get('title', '') or movie.get('original_title', '')
-                similarity = levenshtein_ratio(search_query.lower(), title.lower())
-                scored_results.append((similarity, movie))
+                title = (movie.get('title', '') or movie.get('original_title', '')).lower()
+                original_title = (movie.get('original_title', '') or '').lower()
+                
+                # Check similarity with both title and original title
+                similarity_title = levenshtein_ratio(query_lower, title)
+                similarity_original = levenshtein_ratio(query_lower, original_title)
+                max_similarity = max(similarity_title, similarity_original)
+                
+                # Also check partial matches
+                if query_lower in title or title in query_lower:
+                    max_similarity = max(max_similarity, 0.85)
+                if query_lower in original_title or original_title in query_lower:
+                    max_similarity = max(max_similarity, 0.85)
+                
+                # Include if similarity is above 0.3 (very lenient)
+                if max_similarity > 0.3:
+                    scored_results.append((max_similarity, movie))
             
             # Sort by similarity score (highest first)
             scored_results.sort(key=lambda x: x[0], reverse=True)
@@ -424,11 +466,12 @@ def discover_movies(request):
                     'poster': f"{settings.TMDB_IMAGE_BASE}{movie.get('poster_path')}" if movie.get('poster_path') else None,
                     'rating': round(movie.get('vote_average', 0), 1) if movie.get('vote_average') else None,
                     'backdrop': f"{settings.TMDB_IMAGE_BASE}{movie.get('backdrop_path')}" if movie.get('backdrop_path') else None,
-                    'source': 'tmdb'
+                    'source': 'tmdb',
+                    'match_score': round(similarity * 100, 1)  # Add match score for debugging
                 })
             
-            # If TMDb has few or no results, add Wikipedia results
-            if len(movies) < 5:
+            # Always add Wikipedia results for broader coverage
+            if len(movies) < count:
                 wiki_movies = search_wikipedia_movies(search_query, count - len(movies))
                 movies.extend(wiki_movies)
         else:
