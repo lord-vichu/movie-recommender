@@ -697,11 +697,11 @@ def discover_movies(request):
                 wiki_movies = search_wikipedia_movies(wiki_query, remaining_count)
                 movies.extend(wiki_movies)
         
-        print(f\"Final movie count: {len(movies)}\")
+        print(f"Final movie count: {len(movies)}")
         return JsonResponse({'movies': movies[:count]})  # Limit to requested count
     
     except Exception as e:
-        print(f\"Error in discover_movies: {e}\")
+        print(f"Error in discover_movies: {e}")
         return JsonResponse({'error': str(e)}, status=500)
 
 
