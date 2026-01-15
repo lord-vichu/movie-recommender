@@ -38,6 +38,56 @@ def get_wikipedia_summary(search_term):
     return None
 
 
+def search_wikipedia_movies(query, count=10):
+    """Search Wikipedia for movies and return formatted results"""
+    try:
+        # First, search for the movie on Wikipedia
+        search_url = "https://en.wikipedia.org/w/api.php"
+        search_params = {
+            'action': 'opensearch',
+            'search': f"{query} film",
+            'limit': count * 2,  # Get more results to filter
+            'namespace': 0,
+            'format': 'json'
+        }
+        
+        response = requests.get(search_url, params=search_params, timeout=5)
+        if response.status_code != 200:
+            return []
+        
+        search_results = response.json()
+        titles = search_results[1] if len(search_results) > 1 else []
+        
+        movies = []
+        for title in titles[:count]:
+            # Get detailed info for each result
+            wiki_data = get_wikipedia_summary(title)
+            if wiki_data and wiki_data.get('extract'):
+                # Try to extract year from title (e.g., "Inception (2010 film)")
+                import re
+                year_match = re.search(r'\((\d{4})', title)
+                year = int(year_match.group(1)) if year_match else None
+                
+                movies.append({
+                    'id': f"wiki_{title.replace(' ', '_')}",  # Unique ID for Wikipedia movies
+                    'title': wiki_data.get('title', title).replace(' (film)', '').split(' (')[0],
+                    'year': year,
+                    'genres': [],
+                    'lang': 'en',
+                    'desc': wiki_data.get('extract', 'No description available.'),
+                    'poster': wiki_data.get('thumbnail'),
+                    'rating': None,
+                    'backdrop': wiki_data.get('thumbnail'),
+                    'source': 'wikipedia',
+                    'wiki_url': wiki_data.get('url', '')
+                })
+        
+        return movies
+    except Exception as e:
+        print(f"Wikipedia search error: {e}")
+        return []
+
+
 def index(request):
     """Main page view"""
     return render(request, 'movies/index.html')
@@ -272,12 +322,13 @@ def remove_library(request):
 
 @require_http_methods(["GET"])
 def discover_movies(request):
-    """Discover movies from TMDb API with filters"""
+    """Discover movies from TMDb API with filters, fallback to Wikipedia"""
     try:
         genre = request.GET.get('genre', 'Any')
         language = request.GET.get('language', 'Any')
         timeframe = request.GET.get('timeframe', 'any')
         count = int(request.GET.get('count', 20))
+        search_query = request.GET.get('search', '').strip()  # Add search parameter
         
         # Genre mapping
         genre_map = {
@@ -292,61 +343,100 @@ def discover_movies(request):
             'Tamil': 'ta', 'Korean': 'ko'
         }
         
-        # Build API URL
-        params = {
-            'api_key': settings.TMDB_API_KEY,
-            'sort_by': 'popularity.desc',
-            'vote_count.gte': 100
-        }
+        movies = []
         
-        if genre != 'Any' and genre in genre_map:
-            params['with_genres'] = genre_map[genre]
-        
-        if language != 'Any' and language in language_map:
-            params['with_original_language'] = language_map[language]
-        
-        # Timeframe filter
-        from datetime import datetime
-        current_year = datetime.now().year
-        
-        if timeframe == 'old':
-            params['primary_release_date.lte'] = '2009-12-31'
-        elif timeframe == 'new':
-            params['primary_release_date.gte'] = '2011-01-01'
-            params['primary_release_date.lte'] = f'{current_year}-12-31'
-        else:
-            params['primary_release_date.lte'] = f'{current_year}-12-31'
-        
-        # Fetch multiple pages
-        pages = min(15, max(1, count // 20))
-        all_movies = []
-        
-        for page in range(1, pages + 1):
-            params['page'] = page
-            response = requests.get(
-                f'{settings.TMDB_BASE_URL}/discover/movie',
-                params=params,
+        # If there's a specific search query, try TMDb search first
+        if search_query:
+            search_response = requests.get(
+                f'{settings.TMDB_BASE_URL}/search/movie',
+                params={
+                    'api_key': settings.TMDB_API_KEY,
+                    'query': search_query,
+                    'page': 1
+                },
                 timeout=10
             )
             
-            if response.status_code == 200:
-                data = response.json()
-                all_movies.extend(data.get('results', []))
-        
-        # Format movies
-        movies = []
-        for movie in all_movies[:count]:
-            movies.append({
-                'id': movie.get('id'),
-                'title': movie.get('title') or movie.get('original_title'),
-                'year': int(movie.get('release_date', '0000')[:4]) if movie.get('release_date') else None,
-                'genres': movie.get('genre_ids', []),
-                'lang': movie.get('original_language'),
-                'desc': movie.get('overview', 'No description available.'),
-                'poster': f"{settings.TMDB_IMAGE_BASE}{movie.get('poster_path')}" if movie.get('poster_path') else None,
-                'rating': round(movie.get('vote_average', 0), 1) if movie.get('vote_average') else None,
-                'backdrop': f"{settings.TMDB_IMAGE_BASE}{movie.get('backdrop_path')}" if movie.get('backdrop_path') else None
-            })
+            if search_response.status_code == 200:
+                search_data = search_response.json()
+                tmdb_results = search_data.get('results', [])
+                
+                # Format TMDb results
+                for movie in tmdb_results[:count]:
+                    movies.append({
+                        'id': movie.get('id'),
+                        'title': movie.get('title') or movie.get('original_title'),
+                        'year': int(movie.get('release_date', '0000')[:4]) if movie.get('release_date') else None,
+                        'genres': movie.get('genre_ids', []),
+                        'lang': movie.get('original_language'),
+                        'desc': movie.get('overview', 'No description available.'),
+                        'poster': f"{settings.TMDB_IMAGE_BASE}{movie.get('poster_path')}" if movie.get('poster_path') else None,
+                        'rating': round(movie.get('vote_average', 0), 1) if movie.get('vote_average') else None,
+                        'backdrop': f"{settings.TMDB_IMAGE_BASE}{movie.get('backdrop_path')}" if movie.get('backdrop_path') else None,
+                        'source': 'tmdb'
+                    })
+                
+                # If TMDb has few or no results, add Wikipedia results
+                if len(movies) < 5:
+                    wiki_movies = search_wikipedia_movies(search_query, count - len(movies))
+                    movies.extend(wiki_movies)
+        else:
+            # Regular discover mode (no specific search query)
+            # Build API URL
+            params = {
+                'api_key': settings.TMDB_API_KEY,
+                'sort_by': 'popularity.desc',
+                'vote_count.gte': 100
+            }
+            
+            if genre != 'Any' and genre in genre_map:
+                params['with_genres'] = genre_map[genre]
+            
+            if language != 'Any' and language in language_map:
+                params['with_original_language'] = language_map[language]
+            
+            # Timeframe filter
+            from datetime import datetime
+            current_year = datetime.now().year
+            
+            if timeframe == 'old':
+                params['primary_release_date.lte'] = '2009-12-31'
+            elif timeframe == 'new':
+                params['primary_release_date.gte'] = '2011-01-01'
+                params['primary_release_date.lte'] = f'{current_year}-12-31'
+            else:
+                params['primary_release_date.lte'] = f'{current_year}-12-31'
+            
+            # Fetch multiple pages
+            pages = min(15, max(1, count // 20))
+            all_movies = []
+            
+            for page in range(1, pages + 1):
+                params['page'] = page
+                response = requests.get(
+                    f'{settings.TMDB_BASE_URL}/discover/movie',
+                    params=params,
+                    timeout=10
+                )
+                
+                if response.status_code == 200:
+                    data = response.json()
+                    all_movies.extend(data.get('results', []))
+            
+            # Format movies
+            for movie in all_movies[:count]:
+                movies.append({
+                    'id': movie.get('id'),
+                    'title': movie.get('title') or movie.get('original_title'),
+                    'year': int(movie.get('release_date', '0000')[:4]) if movie.get('release_date') else None,
+                    'genres': movie.get('genre_ids', []),
+                    'lang': movie.get('original_language'),
+                    'desc': movie.get('overview', 'No description available.'),
+                    'poster': f"{settings.TMDB_IMAGE_BASE}{movie.get('poster_path')}" if movie.get('poster_path') else None,
+                    'rating': round(movie.get('vote_average', 0), 1) if movie.get('vote_average') else None,
+                    'backdrop': f"{settings.TMDB_IMAGE_BASE}{movie.get('backdrop_path')}" if movie.get('backdrop_path') else None,
+                    'source': 'tmdb'
+                })
         
         return JsonResponse({'movies': movies})
     

@@ -236,6 +236,16 @@ function renderResults(movies) {
             title.appendChild(rating);
         }
         
+        // Add Wikipedia badge if source is Wikipedia
+        if (movie.source === 'wikipedia') {
+            const wikiBadge = document.createElement('span');
+            wikiBadge.className = 'chip';
+            wikiBadge.textContent = '📖 Wikipedia';
+            wikiBadge.style.background = 'rgba(66, 133, 244, 0.15)';
+            wikiBadge.style.color = '#4285f4';
+            title.appendChild(wikiBadge);
+        }
+        
         const desc = document.createElement('p');
         desc.textContent = movie.desc || 'No description available.';
         
@@ -294,7 +304,7 @@ async function discoverMovies() {
         const language = langEl.value;
         const timeframe = document.querySelector('input[name="timeframe"]:checked')?.value || 'any';
         const count = parseInt(countEl.value) || 20;
-        const searchTerm = searchEl.value.trim().toLowerCase();
+        const searchTerm = searchEl.value.trim();
         const sortBy = sortEl.value;
         
         console.log('Filters:', { genre, language, timeframe, count, searchTerm, sortBy });
@@ -305,6 +315,11 @@ async function discoverMovies() {
             timeframe,
             count: count.toString()
         });
+        
+        // Add search parameter if present
+        if (searchTerm) {
+            params.append('search', searchTerm);
+        }
         
         const url = `/api/movies/discover/?${params}`;
         console.log('Fetching:', url);
@@ -318,14 +333,6 @@ async function discoverMovies() {
             resultsEl.innerHTML = '';
         } else {
             let movies = result.movies || [];
-            
-            // Apply search filter on client side
-            if (searchTerm) {
-                movies = movies.filter(movie => 
-                    movie.title.toLowerCase().includes(searchTerm)
-                );
-                console.log(`Filtered ${movies.length} movies matching "${searchTerm}"`);
-            }
             
             // Apply sorting
             if (sortBy && sortBy !== 'none') {
@@ -406,8 +413,37 @@ async function openQuickView(movie) {
     
     overlay.style.display = 'flex';
     
-    // Load full details if we have an ID
-    if (movie.id) {
+    // For Wikipedia movies, show Wikipedia link prominently
+    if (movie.source === 'wikipedia' && movie.wiki_url) {
+        const castEl = document.getElementById('qCast');
+        const crewEl = document.getElementById('qCrew');
+        const extrasEl = document.getElementById('qExtras');
+        
+        if (castEl) castEl.innerHTML = '<div style="color:var(--muted);font-size:13px">Cast information not available from Wikipedia.</div>';
+        if (crewEl) crewEl.innerHTML = '<li style="color:var(--muted)">Crew information not available from Wikipedia.</li>';
+        
+        if (extrasEl) {
+            extrasEl.innerHTML = `
+                <div style="margin-top:0;margin-bottom:16px;padding:14px;background:rgba(66,133,244,0.08);border-radius:8px;border-left:4px solid #4285f4">
+                    <strong style="display:block;margin-bottom:10px;color:#4285f4;font-size:14px">📖 From Wikipedia</strong>
+                    <p style="margin:0 0 10px 0;font-size:13px;line-height:1.6;color:var(--text)">
+                        This movie information is sourced from Wikipedia. Click below to view the full article for more details including cast, crew, and production information.
+                    </p>
+                    <a href="${movie.wiki_url}" target="_blank" rel="noopener noreferrer" 
+                       style="color:#4285f4;font-size:12px;text-decoration:none;font-weight:600"
+                       onmouseover="this.style.textDecoration='underline'" 
+                       onmouseout="this.style.textDecoration='none'">
+                        Read full article on Wikipedia →
+                    </a>
+                </div>
+            `;
+        }
+        
+        return;
+    }
+    
+    // Load full details if we have a TMDb ID
+    if (movie.id && movie.source !== 'wikipedia') {
         try {
             const result = await apiCall(`/api/movies/${movie.id}/`);
             if (result.movie) {
