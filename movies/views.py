@@ -10,6 +10,18 @@ from .models import Favorite, WatchLater, Library, UserRating
 import json
 import urllib.parse
 
+try:
+    from Levenshtein import ratio as levenshtein_ratio
+except ImportError:
+    # Fallback to simple string matching if Levenshtein not available
+    def levenshtein_ratio(a, b):
+        a, b = a.lower(), b.lower()
+        if a == b:
+            return 1.0
+        if a in b or b in a:
+            return 0.8
+        return 0.0
+
 
 def get_wikipedia_summary(search_term):
     """Fetch Wikipedia summary for a search term"""
@@ -345,8 +357,9 @@ def discover_movies(request):
         
         movies = []
         
-        # If there's a specific search query, try TMDb search first
+        # If there's a specific search query, try TMDb search first with fuzzy matching
         if search_query:
+            # Try exact search first
             search_response = requests.get(
                 f'{settings.TMDB_BASE_URL}/search/movie',
                 params={
@@ -357,29 +370,67 @@ def discover_movies(request):
                 timeout=10
             )
             
+            tmdb_results = []
             if search_response.status_code == 200:
                 search_data = search_response.json()
                 tmdb_results = search_data.get('results', [])
+            
+            # If no exact results, try common misspellings or variations
+            if len(tmdb_results) == 0:
+                # Try searching with alternative spellings
+                variations = [
+                    search_query.replace('tion', 'sion'),
+                    search_query.replace('sion', 'tion'),
+                    search_query.replace('er', 'or'),
+                    search_query.replace('or', 'er'),
+                ]
                 
-                # Format TMDb results
-                for movie in tmdb_results[:count]:
-                    movies.append({
-                        'id': movie.get('id'),
-                        'title': movie.get('title') or movie.get('original_title'),
-                        'year': int(movie.get('release_date', '0000')[:4]) if movie.get('release_date') else None,
-                        'genres': movie.get('genre_ids', []),
-                        'lang': movie.get('original_language'),
-                        'desc': movie.get('overview', 'No description available.'),
-                        'poster': f"{settings.TMDB_IMAGE_BASE}{movie.get('poster_path')}" if movie.get('poster_path') else None,
-                        'rating': round(movie.get('vote_average', 0), 1) if movie.get('vote_average') else None,
-                        'backdrop': f"{settings.TMDB_IMAGE_BASE}{movie.get('backdrop_path')}" if movie.get('backdrop_path') else None,
-                        'source': 'tmdb'
-                    })
-                
-                # If TMDb has few or no results, add Wikipedia results
-                if len(movies) < 5:
-                    wiki_movies = search_wikipedia_movies(search_query, count - len(movies))
-                    movies.extend(wiki_movies)
+                for variation in variations:
+                    if variation != search_query:
+                        var_response = requests.get(
+                            f'{settings.TMDB_BASE_URL}/search/movie',
+                            params={
+                                'api_key': settings.TMDB_API_KEY,
+                                'query': variation,
+                                'page': 1
+                            },
+                            timeout=10
+                        )
+                        if var_response.status_code == 200:
+                            var_data = var_response.json()
+                            tmdb_results.extend(var_data.get('results', []))
+                            if len(tmdb_results) > 0:
+                                break
+            
+            # Score and sort results by similarity to search query
+            scored_results = []
+            for movie in tmdb_results:
+                title = movie.get('title', '') or movie.get('original_title', '')
+                similarity = levenshtein_ratio(search_query.lower(), title.lower())
+                scored_results.append((similarity, movie))
+            
+            # Sort by similarity score (highest first)
+            scored_results.sort(key=lambda x: x[0], reverse=True)
+            
+            # Format TMDb results
+            for similarity, movie in scored_results[:count]:
+                movies.append({
+                    'id': movie.get('id'),
+                    'title': movie.get('title') or movie.get('original_title'),
+                    'year': int(movie.get('release_date', '0000')[:4]) if movie.get('release_date') else None,
+                    'genres': movie.get('genre_ids', []),
+                    'lang': movie.get('original_language'),
+                    'desc': movie.get('overview', 'No description available.'),
+                    'poster': f"{settings.TMDB_IMAGE_BASE}{movie.get('poster_path')}" if movie.get('poster_path') else None,
+                    'rating': round(movie.get('vote_average', 0), 1) if movie.get('vote_average') else None,
+                    'backdrop': f"{settings.TMDB_IMAGE_BASE}{movie.get('backdrop_path')}" if movie.get('backdrop_path') else None,
+                    'source': 'tmdb'
+                })
+            
+            # If TMDb has few or no results, add Wikipedia results
+            if len(movies) < 5:
+                wiki_movies = search_wikipedia_movies(search_query, count - len(movies))
+                movies.extend(wiki_movies)
         else:
             # Regular discover mode (no specific search query)
             # Build API URL
@@ -437,6 +488,18 @@ def discover_movies(request):
                     'backdrop': f"{settings.TMDB_IMAGE_BASE}{movie.get('backdrop_path')}" if movie.get('backdrop_path') else None,
                     'source': 'tmdb'
                 })
+            
+            # If TMDb returns few results (especially for specific languages), try Wikipedia
+            if len(movies) < 10 and language != 'Any':
+                # Create language-specific search query for Wikipedia
+                language_names = {
+                    'English': 'english', 'Hindi': 'hindi', 'Malayalam': 'malayalam',
+                    'Tamil': 'tamil', 'Korean': 'korean'
+                }
+                if language in language_names:
+                    wiki_query = f"{language_names[language]} cinema"
+                    wiki_movies = search_wikipedia_movies(wiki_query, min(10, count - len(movies)))
+                    movies.extend(wiki_movies)
         
         return JsonResponse({'movies': movies})
     
