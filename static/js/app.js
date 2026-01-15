@@ -648,10 +648,10 @@ async function openPersonProfile(personId) {
         if (!overlay || !nameEl) return;
         
         // Show loading state
-        nameEl.textContent = 'Loading...';
+        nameEl.innerHTML = '<div class="movie-loader" style="font-size:18px">LOADING<span class="loading-dots"><span>.</span><span>.</span><span>.</span></span></div>';
         if (meta) meta.textContent = '';
-        if (bio) bio.textContent = 'Loading biography...';
-        if (knownEl) knownEl.innerHTML = '<div style="color:var(--muted)">Loading...</div>';
+        if (bio) bio.innerHTML = '<div class="loading-container" style="padding:20px"><div class="movie-loader" style="font-size:16px">LOADING<span class="loading-dots"><span>.</span><span>.</span><span>.</span></span></div></div>';
+        if (knownEl) knownEl.innerHTML = '<div class="loading-container" style="padding:20px"><div class="movie-loader" style="font-size:16px">LOADING<span class="loading-dots"><span>.</span><span>.</span><span>.</span></span></div></div>';
         overlay.style.display = 'flex';
         
         // Fetch person details
