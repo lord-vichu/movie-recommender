@@ -685,15 +685,15 @@ def discover_movies(request):
                         if len(movies) >= count:
                             break
                         wiki_movies = search_wikipedia_movies(search_term, count - len(movies))
-                        print(f\"Wikipedia search '{search_term}' returned {len(wiki_movies)} movies\")
+                        print(f"Wikipedia search '{search_term}' returned {len(wiki_movies)} movies")
                         movies.extend(wiki_movies)
                     
-                    print(f\"After Wikipedia: Total {len(movies)} movies\")
+                    print(f"After Wikipedia: Total {len(movies)} movies")
             
             # If genre was selected and we still need more, search Wikipedia
             elif remaining_count > 0 and selected_genre_name and selected_genre_name != 'Any':
-                wiki_query = f\"{selected_genre_name.lower()}\"
-                print(f\"Searching Wikipedia for {remaining_count} {wiki_query} movies\")
+                wiki_query = f"{selected_genre_name.lower()}"
+                print(f"Searching Wikipedia for {remaining_count} {wiki_query} movies")
                 wiki_movies = search_wikipedia_movies(wiki_query, remaining_count)
                 movies.extend(wiki_movies)
         
