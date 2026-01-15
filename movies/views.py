@@ -440,8 +440,10 @@ def discover_movies(request):
                 'vote_count.gte': 100
             }
             
+            selected_genre_name = None
             if genre != 'Any' and genre in genre_map:
                 params['with_genres'] = genre_map[genre]
+                selected_genre_name = genre
             
             if language != 'Any' and language in language_map:
                 params['with_original_language'] = language_map[language]
@@ -489,6 +491,12 @@ def discover_movies(request):
                     'source': 'tmdb'
                 })
             
+            # If TMDb returns few results for specific genre, try Wikipedia
+            if len(movies) < 10 and selected_genre_name and selected_genre_name != 'Any':
+                wiki_query = f"{selected_genre_name.lower()} films"
+                wiki_movies = search_wikipedia_movies(wiki_query, min(10, count - len(movies)))
+                movies.extend(wiki_movies)
+            
             # If TMDb returns few results (especially for specific languages), try Wikipedia
             if len(movies) < 10 and language != 'Any':
                 # Create language-specific search query for Wikipedia
@@ -509,30 +517,42 @@ def discover_movies(request):
 
 @require_http_methods(["GET"])
 def get_trending(request):
-    """Get trending movies"""
+    """Get trending movies from TMDb and popular movies from Wikipedia"""
     try:
+        movies = []
+        
+        # Get TMDb trending movies
         response = requests.get(
             f'{settings.TMDB_BASE_URL}/trending/movie/day',
             params={'api_key': settings.TMDB_API_KEY},
             timeout=10
         )
         
-        if response.status_code != 200:
-            return JsonResponse({'error': 'Failed to fetch trending movies'}, status=500)
+        if response.status_code == 200:
+            data = response.json()
+            
+            for movie in data.get('results', [])[:15]:
+                movies.append({
+                    'id': movie.get('id'),
+                    'title': movie.get('title') or movie.get('original_title'),
+                    'year': int(movie.get('release_date', '0000')[:4]) if movie.get('release_date') else None,
+                    'poster': f"{settings.TMDB_IMAGE_BASE}{movie.get('poster_path')}" if movie.get('poster_path') else None,
+                    'rating': round(movie.get('vote_average', 0), 1) if movie.get('vote_average') else None,
+                    'source': 'tmdb'
+                })
         
-        data = response.json()
-        movies = []
+        # Add some popular Wikipedia movies to supplement
+        try:
+            wiki_search_terms = ['2024 films', '2025 films', 'blockbuster films']
+            for term in wiki_search_terms:
+                wiki_movies = search_wikipedia_movies(term, 5)
+                movies.extend(wiki_movies[:2])  # Add 2 from each search
+                if len(movies) >= 20:
+                    break
+        except Exception as wiki_err:
+            print(f"Wikipedia trending fetch error: {wiki_err}")
         
-        for movie in data.get('results', [])[:20]:
-            movies.append({
-                'id': movie.get('id'),
-                'title': movie.get('title') or movie.get('original_title'),
-                'year': int(movie.get('release_date', '0000')[:4]) if movie.get('release_date') else None,
-                'poster': f"{settings.TMDB_IMAGE_BASE}{movie.get('poster_path')}" if movie.get('poster_path') else None,
-                'rating': round(movie.get('vote_average', 0), 1) if movie.get('vote_average') else None
-            })
-        
-        return JsonResponse({'trending': movies})
+        return JsonResponse({'trending': movies[:20]})
     
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)

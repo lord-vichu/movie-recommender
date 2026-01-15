@@ -816,9 +816,21 @@ if (searchBtn) {
 }
 
 surpriseBtn?.addEventListener('click', () => {
-    genreEl.value = 'Any';
-    langEl.value = 'Any';
-    countEl.value = Math.floor(Math.random() * 10) + 5;
+    // Reset to random selections
+    const genres = ['Any', 'Action', 'Comedy', 'Drama', 'Horror', 'Romance', 'Thriller', 'Sci-Fi', 'Crime', 'Animation', 'Fantasy'];
+    const languages = ['Any', 'English', 'Hindi', 'Malayalam', 'Tamil', 'Korean'];
+    
+    genreEl.value = genres[Math.floor(Math.random() * genres.length)];
+    langEl.value = languages[Math.floor(Math.random() * languages.length)];
+    countEl.value = Math.floor(Math.random() * 15) + 10; // 10-25 movies
+    
+    // Random timeframe
+    const timeframes = document.querySelectorAll('input[name="timeframe"]');
+    if (timeframes.length > 0) {
+        const randomTimeframe = timeframes[Math.floor(Math.random() * timeframes.length)];
+        randomTimeframe.checked = true;
+    }
+    
     discoverMovies();
 });
 
