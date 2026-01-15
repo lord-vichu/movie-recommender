@@ -56,27 +56,34 @@ def search_wikipedia_movies(query, count=10):
         movies = []
         seen_titles = set()
         
-        # Strategy 1: Direct search with "film" appended
         search_url = "https://en.wikipedia.org/w/api.php"
+        
+        # Strategy 1: Direct search with multiple variations
         search_queries = [
-            f"{query} film",
-            f"{query} movie",
-            query,
-            f"{query} cinema films",
+            f"{query} films",
+            f"{query} cinema",
             f"List of {query} films",
+            f"{query} film industry",
+            f"{query} movies",
+            query,
+            f"{query}-language films",
+            f"{query} language cinema",
         ]
         
         for search_term in search_queries:
+            if len(movies) >= count:
+                break
+                
             try:
                 search_params = {
                     'action': 'opensearch',
                     'search': search_term,
-                    'limit': 20,  # Get more results
+                    'limit': 50,  # Get many more results
                     'namespace': 0,
                     'format': 'json'
                 }
                 
-                response = requests.get(search_url, params=search_params, timeout=8)
+                response = requests.get(search_url, params=search_params, timeout=10)
                 if response.status_code != 200:
                     continue
                 
@@ -84,100 +91,131 @@ def search_wikipedia_movies(query, count=10):
                 titles = search_results[1] if len(search_results) > 1 else []
                 
                 for title in titles:
-                    # Skip if we've seen this title
+                    if len(movies) >= count:
+                        break
+                        
                     if title.lower() in seen_titles:
                         continue
                     
-                    # Filter for likely movie articles
+                    # More lenient filtering - accept any article that might be movie-related
                     title_lower = title.lower()
-                    if any(keyword in title_lower for keyword in ['film', 'movie', 'cinema']):
+                    
+                    # Accept if contains movie keywords OR is in a list
+                    is_movie_related = (
+                        any(keyword in title_lower for keyword in ['film', 'movie', 'cinema']) or
+                        'list of' in title_lower
+                    )
+                    
+                    if is_movie_related:
                         seen_titles.add(title.lower())
                         
-                        # Get detailed info
-                        wiki_data = get_wikipedia_summary(title)
-                        if wiki_data and wiki_data.get('extract'):
-                            # Try to extract year from title
-                            import re
-                            year_match = re.search(r'\((\d{4})', title)
-                            year = int(year_match.group(1)) if year_match else None
+                        try:
+                            wiki_data = get_wikipedia_summary(title)
+                            if wiki_data and wiki_data.get('extract'):
+                                import re
+                                year_match = re.search(r'\((\d{4})', title)
+                                year = int(year_match.group(1)) if year_match else None
+                                
+                                clean_title = wiki_data.get('title', title)
+                                clean_title = re.sub(r'\s*\(.*?\)\s*', '', clean_title)
+                                clean_title = clean_title.replace(' film', '').replace(' movie', '').strip()
+                                
+                                movies.append({
+                                    'id': f"wiki_{title.replace(' ', '_')}",
+                                    'title': clean_title,
+                                    'year': year,
+                                    'genres': [],
+                                    'lang': 'en',
+                                    'desc': wiki_data.get('extract', 'No description available.'),
+                                    'poster': wiki_data.get('thumbnail'),
+                                    'rating': None,
+                                    'backdrop': wiki_data.get('thumbnail'),
+                                    'source': 'wikipedia',
+                                    'wiki_url': wiki_data.get('url', '')
+                                })
+                        except Exception as detail_err:
+                            print(f"Error getting details for '{title}': {detail_err}")
+                            continue
                             
-                            # Clean up title
-                            clean_title = wiki_data.get('title', title)
-                            clean_title = re.sub(r'\s*\(.*?\)\s*', '', clean_title)  # Remove parentheses content
-                            clean_title = clean_title.replace(' film', '').replace(' movie', '').strip()
-                            
-                            movies.append({
-                                'id': f"wiki_{title.replace(' ', '_')}",
-                                'title': clean_title,
-                                'year': year,
-                                'genres': [],
-                                'lang': 'en',
-                                'desc': wiki_data.get('extract', 'No description available.'),
-                                'poster': wiki_data.get('thumbnail'),
-                                'rating': None,
-                                'backdrop': wiki_data.get('thumbnail'),
-                                'source': 'wikipedia',
-                                'wiki_url': wiki_data.get('url', '')
-                            })
-                            
-                            if len(movies) >= count:
-                                return movies
             except Exception as search_err:
                 print(f"Wikipedia search error for '{search_term}': {search_err}")
                 continue
         
-        # Strategy 2: If still not enough, try category-based search
+        # Strategy 2: Category-based search with multiple category names
         if len(movies) < count:
-            try:
-                # Try to get films from Wikipedia category
-                category_params = {
-                    'action': 'query',
-                    'list': 'categorymembers',
-                    'cmtitle': f'Category:{query} films',
-                    'cmlimit': min(50, count * 2),
-                    'format': 'json'
-                }
-                
-                cat_response = requests.get(search_url, params=category_params, timeout=8)
-                if cat_response.status_code == 200:
-                    cat_data = cat_response.json()
-                    members = cat_data.get('query', {}).get('categorymembers', [])
+            category_variations = [
+                f"{query} films",
+                f"{query} cinema",
+                f"{query}-language films",
+                f"{query} film",
+            ]
+            
+            for cat_name in category_variations:
+                if len(movies) >= count:
+                    break
                     
-                    for member in members:
-                        if len(movies) >= count:
-                            break
+                try:
+                    category_params = {
+                        'action': 'query',
+                        'list': 'categorymembers',
+                        'cmtitle': f'Category:{cat_name}',
+                        'cmlimit': 100,  # Get many results
+                        'format': 'json'
+                    }
+                    
+                    cat_response = requests.get(search_url, params=category_params, timeout=10)
+                    if cat_response.status_code == 200:
+                        cat_data = cat_response.json()
+                        members = cat_data.get('query', {}).get('categorymembers', [])
                         
-                        member_title = member.get('title', '')
-                        if member_title.lower() in seen_titles:
-                            continue
-                        
-                        seen_titles.add(member_title.lower())
-                        wiki_data = get_wikipedia_summary(member_title)
-                        
-                        if wiki_data and wiki_data.get('extract'):
-                            import re
-                            year_match = re.search(r'\((\d{4})', member_title)
-                            year = int(year_match.group(1)) if year_match else None
+                        for member in members:
+                            if len(movies) >= count:
+                                break
                             
-                            clean_title = wiki_data.get('title', member_title)
-                            clean_title = re.sub(r'\s*\(.*?\)\s*', '', clean_title)
-                            clean_title = clean_title.replace(' film', '').replace(' movie', '').strip()
+                            member_title = member.get('title', '')
+                            if member_title.lower() in seen_titles:
+                                continue
                             
-                            movies.append({
-                                'id': f"wiki_{member_title.replace(' ', '_')}",
-                                'title': clean_title,
-                                'year': year,
-                                'genres': [],
-                                'lang': 'en',
-                                'desc': wiki_data.get('extract', 'No description available.'),
-                                'poster': wiki_data.get('thumbnail'),
-                                'rating': None,
-                                'backdrop': wiki_data.get('thumbnail'),
-                                'source': 'wikipedia',
-                                'wiki_url': wiki_data.get('url', '')
-                            })
-            except Exception as cat_err:
-                print(f"Wikipedia category search error: {cat_err}")
+                            seen_titles.add(member_title.lower())
+                            
+                            try:
+                                wiki_data = get_wikipedia_summary(member_title)
+                                
+                                if wiki_data and wiki_data.get('extract'):
+                                    import re
+                                    year_match = re.search(r'\((\d{4})', member_title)
+                                    year = int(year_match.group(1)) if year_match else None
+                                    
+                                    clean_title = wiki_data.get('title', member_title)
+                                    clean_title = re.sub(r'\s*\(.*?\)\s*', '', clean_title)
+                                    clean_title = clean_title.replace(' film', '').replace(' movie', '').strip()
+                                    
+                                    movies.append({
+                                        'id': f"wiki_{member_title.replace(' ', '_')}",
+                                        'title': clean_title,
+                                        'year': year,
+                                        'genres': [],
+                                        'lang': 'en',
+                                        'desc': wiki_data.get('extract', 'No description available.'),
+                                        'poster': wiki_data.get('thumbnail'),
+                                        'rating': None,
+                                        'backdrop': wiki_data.get('thumbnail'),
+                                        'source': 'wikipedia',
+                                        'wiki_url': wiki_data.get('url', '')
+                                    })
+                            except Exception as detail_err:
+                                print(f"Error getting category member details: {detail_err}")
+                                continue
+                                
+                except Exception as cat_err:
+                    print(f"Wikipedia category search error for '{cat_name}': {cat_err}")
+                    continue
+        
+        print(f"Wikipedia search for '{query}' returned {len(movies)} movies")
+        return movies[:count]
+    except Exception as e:
+        print(f"Wikipedia search error: {e}")
+        return []
         
         return movies[:count]
     except Exception as e:
