@@ -288,7 +288,7 @@ async function discoverMovies() {
     try {
         console.log('discoverMovies called');
         clearError();
-        resultsEl.innerHTML = '<div class="loading-container"><div class="spinner"></div><div>Loading movies...</div></div>';
+        resultsEl.innerHTML = '<div class="loading-container"><div class="movie-loader">MOVIE RECOMMENDER<span class="loading-dots"><span>.</span><span>.</span><span>.</span></span></div></div>';
         
         const genre = genreEl.value;
         const language = langEl.value;
