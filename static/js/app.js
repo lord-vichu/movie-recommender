@@ -363,7 +363,9 @@ async function loadTrending() {
         }
         
         trendingList.innerHTML = '';
-        result.trending.forEach(movie => {
+        
+        // Create cards
+        const createCard = (movie) => {
             const card = document.createElement('div');
             card.className = 'trending-card';
             
@@ -384,7 +386,17 @@ async function loadTrending() {
                 if (details.movie) openQuickView(details.movie);
             });
             
-            trendingList.appendChild(card);
+            return card;
+        };
+        
+        // Add movies twice for infinite loop effect
+        result.trending.forEach(movie => {
+            trendingList.appendChild(createCard(movie));
+        });
+        
+        // Duplicate for seamless loop
+        result.trending.forEach(movie => {
+            trendingList.appendChild(createCard(movie));
         });
     } catch (err) {
         console.error('Failed to load trending', err);

@@ -105,13 +105,20 @@ button.ghost{
 }
 
 /* Trending horizontal strip */
-.trending-section{margin-top:12px}
+.trending-section{margin-top:12px;overflow:hidden}
 .trending-list{
   display:flex;
   gap:10px;
-  overflow-x:auto;
   padding:8px 4px;
-  scrollbar-width:thin;
+  animation:scroll 40s linear infinite;
+  width:max-content;
+}
+.trending-list:hover{
+  animation-play-state:paused;
+}
+@keyframes scroll{
+  0%{transform:translateX(0)}
+  100%{transform:translateX(-50%)}
 }
 .trending-card{
   min-width:140px;
