@@ -670,21 +670,24 @@ def discover_movies(request):
                 }
                 if language in language_names:
                     lang_name = language_names[language]
-                    # Calculate how many we need (always try to get full count from Wikipedia)
-                    wiki_count_needed = max(count - len(movies), count // 2)  # Get at least half from Wikipedia
+                    # ALWAYS request MORE than needed from Wikipedia to ensure we get enough
+                    wiki_count_needed = count * 2  # Request double to ensure we get enough
                     print(f"Searching Wikipedia for {wiki_count_needed} {lang_name} movies")
                     
-                    # Try multiple search terms
+                    # Try multiple search terms and KEEP ADDING until we have enough
                     search_terms = [
                         lang_name,
                         f"{lang_name} cinema",
+                        f"{lang_name} film",
                         f"{lang_name}-language",
+                        f"{lang_name} movies",
                     ]
                     
                     for search_term in search_terms:
                         if len(movies) >= count:
                             break
-                        wiki_movies = search_wikipedia_movies(search_term, count - len(movies))
+                        # Request MORE from each search to ensure we get enough
+                        wiki_movies = search_wikipedia_movies(search_term, wiki_count_needed)
                         print(f"Wikipedia search '{search_term}' returned {len(wiki_movies)} movies")
                         movies.extend(wiki_movies)
                     
