@@ -9,6 +9,13 @@ https://docs.djangoproject.com/en/4.2/howto/deployment/wsgi/
 
 import os
 
+# Load .env file
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
+
 from django.core.wsgi import get_wsgi_application
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'movie_recommender.settings')
