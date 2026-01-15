@@ -206,7 +206,7 @@ button.ghost{
   color:var(--muted);
 }
 .movie-loader{
-  font-size:32px;
+  font-size:clamp(18px, 4vw, 28px);
   font-weight:700;
   background:linear-gradient(90deg, #667eea, #764ba2, #f093fb, #667eea);
   background-size:300% 100%;
@@ -215,7 +215,10 @@ button.ghost{
   background-clip:text;
   animation:textShine 2s ease-in-out infinite;
   margin:0 auto 16px;
-  letter-spacing:2px;
+  letter-spacing:1px;
+  word-break:keep-all;
+  white-space:nowrap;
+  max-width:100%;
 }
 @keyframes textShine{
   0%, 100%{background-position:0% 50%}

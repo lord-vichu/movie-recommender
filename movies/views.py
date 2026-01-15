@@ -659,16 +659,10 @@ def discover_movies(request):
             
             # Always try to supplement with Wikipedia if we don't have enough movies
             remaining_count = count - len(movies)
+            print(f"TMDb returned {len(movies)} movies, need {remaining_count} more")
             
-            # If TMDb returns few results for specific genre, try Wikipedia
-            if remaining_count > 0 and selected_genre_name and selected_genre_name != 'Any':
-                wiki_query = f"{selected_genre_name.lower()}"
-                wiki_movies = search_wikipedia_movies(wiki_query, remaining_count)
-                movies.extend(wiki_movies)
-                remaining_count = count - len(movies)
-            
-            # If TMDb returns few results for specific languages, aggressively search Wikipedia
-            if remaining_count > 0 and language != 'Any':
+            # ALWAYS search Wikipedia for language-specific queries to ensure we get 20 movies
+            if language != 'Any':
                 # Create language-specific search queries for Wikipedia
                 language_names = {
                     'English': 'english', 'Hindi': 'hindi', 'Malayalam': 'malayalam',
@@ -676,6 +670,10 @@ def discover_movies(request):
                 }
                 if language in language_names:
                     lang_name = language_names[language]
+                    # Calculate how many we need (always try to get full count from Wikipedia)
+                    wiki_count_needed = max(count - len(movies), count // 2)  # Get at least half from Wikipedia
+                    print(f"Searching Wikipedia for {wiki_count_needed} {lang_name} movies")
+                    
                     # Try multiple search terms
                     search_terms = [
                         lang_name,
@@ -687,11 +685,23 @@ def discover_movies(request):
                         if len(movies) >= count:
                             break
                         wiki_movies = search_wikipedia_movies(search_term, count - len(movies))
+                        print(f\"Wikipedia search '{search_term}' returned {len(wiki_movies)} movies\")
                         movies.extend(wiki_movies)
+                    
+                    print(f\"After Wikipedia: Total {len(movies)} movies\")
+            
+            # If genre was selected and we still need more, search Wikipedia
+            elif remaining_count > 0 and selected_genre_name and selected_genre_name != 'Any':
+                wiki_query = f\"{selected_genre_name.lower()}\"
+                print(f\"Searching Wikipedia for {remaining_count} {wiki_query} movies\")
+                wiki_movies = search_wikipedia_movies(wiki_query, remaining_count)
+                movies.extend(wiki_movies)
         
+        print(f\"Final movie count: {len(movies)}\")
         return JsonResponse({'movies': movies[:count]})  # Limit to requested count
     
     except Exception as e:
+        print(f\"Error in discover_movies: {e}\")
         return JsonResponse({'error': str(e)}, status=500)
 
 
