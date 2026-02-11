@@ -2,6 +2,8 @@
 
 A Django-based movie recommendation web application using The Movie Database (TMDb) API.
 
+> **🚀 Connected to GitHub & Render** - Auto-deploy enabled!
+
 ## Features
 
 - Movie discovery with genre, language, and timeframe filters
