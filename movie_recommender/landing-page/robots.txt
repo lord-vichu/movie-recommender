@@ -1,0 +1,10 @@
+# robots.txt for MovieFinder Landing Page
+
+User-agent: *
+Allow: /
+
+# Sitemap location
+Sitemap: https://movie-recommender.onrender.com/sitemap.xml
+
+# Crawl-delay for bots
+Crawl-delay: 1

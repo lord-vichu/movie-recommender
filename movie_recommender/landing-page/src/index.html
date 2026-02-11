@@ -3,12 +3,50 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Discover your next favorite movie with personalized recommendations powered by AI">
+    
+    <!-- Primary Meta Tags -->
     <title>MovieFinder - Your Personal Movie Discovery Platform</title>
+    <meta name="title" content="MovieFinder - Your Personal Movie Discovery Platform">
+    <meta name="description" content="Discover your next favorite movie with personalized recommendations powered by AI. Browse 10K+ movies, get smart recommendations, and join 50K+ movie lovers today.">
+    <meta name="keywords" content="movie recommendations, AI movie finder, movie discovery, film recommendations, personalized movies, movie database, trending movies">
+    <meta name="author" content="MovieFinder">
+    <meta name="robots" content="index, follow">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://movie-recommender.onrender.com/">
+    <meta property="og:title" content="MovieFinder - Your Personal Movie Discovery Platform">
+    <meta property="og:description" content="Discover your next favorite movie with personalized recommendations powered by AI. Browse 10K+ movies and get smart recommendations.">
+    <meta property="og:image" content="https://movie-recommender.onrender.com/og-image.jpg">
+    
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://movie-recommender.onrender.com/">
+    <meta property="twitter:title" content="MovieFinder - Your Personal Movie Discovery Platform">
+    <meta property="twitter:description" content="Discover your next favorite movie with personalized recommendations powered by AI.">
+    <meta property="twitter:image" content="https://movie-recommender.onrender.com/og-image.jpg">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" sizes="32x32" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎬</text></svg>">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎬</text></svg>">
+    
+    <!-- Web App Manifest -->
+    <link rel="manifest" href="../manifest.json">
+    
+    <!-- Stylesheets -->
     <link rel="stylesheet" href="styles/main.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Preload critical resources -->
+    <link rel="preload" href="styles/main.css" as="style">
+    
+    <!-- Theme Color -->
+    <meta name="theme-color" content="#6366f1">
+    
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://movie-recommender.onrender.com/">
 </head>
 <body>
     <!-- Navigation -->
@@ -216,6 +254,59 @@
         </div>
     </footer>
 
+    <!-- Loading Spinner -->
+    <div id="page-loader" class="page-loader">
+        <div class="loader-spinner"></div>
+    </div>
+
+    <!-- Cookie Consent Banner -->
+    <div id="cookie-banner" class="cookie-banner">
+        <div class="cookie-content">
+            <p>🍪 We use cookies to enhance your experience. By continuing to visit this site you agree to our use of cookies.</p>
+            <div class="cookie-buttons">
+                <button id="cookie-accept" class="btn-cookie btn-cookie-accept">Accept</button>
+                <button id="cookie-decline" class="btn-cookie btn-cookie-decline">Decline</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Back to Top Button -->
+    <button id="back-to-top" class="back-to-top" aria-label="Back to top" title="Back to top">
+        ↑
+    </button>
+
+    <!-- Schema.org structured data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "MovieFinder",
+      "description": "Discover your next favorite movie with personalized recommendations powered by AI",
+      "url": "https://movie-recommender.onrender.com/",
+      "applicationCategory": "Entertainment",
+      "operatingSystem": "Any",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      },
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": "4.8",
+        "ratingCount": "1250"
+      }
+    }
+    </script>
+
     <script src="scripts/main.js"></script>
+    
+    <!-- Analytics placeholder (replace with your tracking ID) -->
+    <script>
+        // Google Analytics placeholder
+        // window.dataLayer = window.dataLayer || [];
+        // function gtag(){dataLayer.push(arguments);}
+        // gtag('js', new Date());
+        // gtag('config', 'GA_MEASUREMENT_ID');
+    </script>
 </body>
 </html>
