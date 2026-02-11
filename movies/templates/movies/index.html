@@ -5,112 +5,185 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <meta name="csrf-token" content="{{ csrf_token }}">
-  <title>Movie Recommender — Genre & Language Filters</title>
+  <title>MovieFinder - Discover Your Next Favorite Movie</title>
+  <meta name="description" content="Discover personalized movie recommendations based on genre, language, and your preferences. Search from thousands of movies.">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎬</text></svg>">
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5130984760773628"
      crossorigin="anonymous"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{% static 'css/style.css' %}">
 </head>
 <body>
-  <div class="wrap" role="main" aria-labelledby="title">
-    <header>
-      <div>
-        <h1 id="title">Movie Recommender <span id="loadStatus" style="font-size:12px;color:#4caf50;"></span></h1>
-        <p>Choose genre, language and timeframe. "Old" = before 2010. "New" = after 2010. "Any" includes 2010.</p>
+  <!-- Navigation Bar -->
+  <nav class="main-nav">
+    <div class="nav-container">
+      <div class="nav-brand">
+        <h1>🎬 MovieFinder</h1>
       </div>
-    </header>
+      <div class="nav-menu">
+        <button class="nav-btn" id="trendingBtn" title="Show trending">
+          <span class="icon">🔥</span> Trending
+        </button>
+        <button class="nav-btn" id="favoritesBtn" title="Show favorites">
+          <span class="icon">★</span> Favorites
+        </button>
+        <button class="nav-btn" id="watchLaterBtn" title="Watch later list">
+          <span class="icon">⏰</span> Watch Later
+        </button>
+        <button class="nav-btn" id="libraryBtn" title="My library">
+          <span class="icon">📚</span> Library
+        </button>
+      </div>
+      <div class="nav-actions">
+        <button class="icon-btn" id="themeToggle" title="Toggle theme">🌙</button>
+        <button class="btn-signin" id="signInBtn">
+          <span id="userLabel">Sign In</span>
+        </button>
+      </div>
+    </div>
+  </nav>
 
+  <!-- Hero Section with Search -->
+  <section class="hero-section">
+    <div class="hero-content">
+      <h2 class="hero-title">Discover Your Next Favorite Movie</h2>
+      <p class="hero-subtitle">Personalized recommendations from thousands of movies</p>
+      
+      <!-- Main Search Bar -->
+      <div class="search-container">
+        <div class="search-box">
+          <span class="search-icon">🔍</span>
+          <input id="searchTerm" type="search" placeholder="Search for movies by title..." class="search-input" />
+          <button id="searchBtn" class="btn-search">Search</button>
+        </div>
+      </div>
+
+      <!-- Quick Filters -->
+      <div class="quick-filters">
+        <button class="filter-chip" id="surpriseBtn">
+          <span class="chip-icon">🎲</span> Surprise Me
+        </button>
+        <button class="filter-chip" data-genre="Action">
+          <span class="chip-icon">💥</span> Action
+        </button>
+        <button class="filter-chip" data-genre="Comedy">
+          <span class="chip-icon">😂</span> Comedy
+        </button>
+        <button class="filter-chip" data-genre="Horror">
+          <span class="chip-icon">😱</span> Horror
+        </button>
+        <button class="filter-chip" data-genre="Romance">
+          <span class="chip-icon">❤️</span> Romance
+        </button>
+        <button class="filter-chip" id="showAdvancedBtn">
+          <span class="chip-icon">⚙️</span> More Filters
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <div class="main-container">
     <div id="errorContainer" class="error-message" role="alert" aria-live="assertive"></div>
 
-    <div class="controls" aria-live="polite">
-      <div class="control">
-        <label for="genre">Genre</label>
-        <select id="genre">
-          <option value="Any">Any</option>
-          <option value="Thriller">Thriller</option>
-          <option value="Romance">Romantic</option>
-          <option value="Horror">Horror</option>
-          <option value="Drama">Drama</option>
-          <option value="Biopic">Biopic</option>
-          <option value="Comedy">Comedy</option>
-          <option value="Action">Action</option>
-          <option value="Sci-Fi">Sci-Fi</option>
-          <option value="Crime">Crime</option>
-          <option value="Animation">Animation</option>
-          <option value="Fantasy">Fantasy</option>
-        </select>
+    <!-- Advanced Filters (Collapsible) -->
+    <div class="advanced-filters" id="advancedFilters" style="display:none;">
+      <div class="filters-header">
+        <h3>Advanced Filters</h3>
+        <button class="btn-close" id="closeAdvancedBtn">✕</button>
       </div>
+      <div class="filters-grid"
 
-      <div class="control">
-        <label for="language">Language</label>
-        <select id="language">
-          <option value="Any">Any</option>
-          <option value="English">English</option>
-          <option value="Hindi">Hindi</option>
-          <option value="Malayalam">Malayalam</option>
-          <option value="Tamil">Tamil</option>
-          <option value="Korean">Korean</option>
-        </select>
-      </div>
+      <div class="filters-grid">
+        <div class="filter-group">
+          <label for="genre">Genre</label>
+          <select id="genre" class="filter-select">
+            <option value="Any">Any</option>
+            <option value="Thriller">Thriller</option>
+            <option value="Romance">Romantic</option>
+            <option value="Horror">Horror</option>
+            <option value="Drama">Drama</option>
+            <option value="Biopic">Biopic</option>
+            <option value="Comedy">Comedy</option>
+            <option value="Action">Action</option>
+            <option value="Sci-Fi">Sci-Fi</option>
+            <option value="Crime">Crime</option>
+            <option value="Animation">Animation</option>
+            <option value="Fantasy">Fantasy</option>
+          </select>
+        </div>
 
-      <div class="control">
-        <label for="certSelect">Certificate</label>
-        <select id="certSelect">
-          <option value="Any">Any</option>
-          <option value="U">U</option>
-          <option value="UA">UA</option>
-          <option value="A">A</option>
-          <option value="PG-13">PG-13</option>
-          <option value="R">R</option>
-          <option value="Not Rated">Not Rated</option>
-        </select>
-      </div>
+        <div class="filter-group">
+          <label for="language">Language</label>
+          <select id="language" class="filter-select">
+            <option value="Any">Any</option>
+            <option value="English">English</option>
+            <option value="Hindi">Hindi</option>
+            <option value="Malayalam">Malayalam</option>
+            <option value="Tamil">Tamil</option>
+            <option value="Korean">Korean</option>
+          </select>
+        </div>
 
-      <div class="control">
-        <label>Timeframe</label>
-        <div class="radio-row" role="radiogroup" aria-label="Timeframe options">
-          <label><input type="radio" name="timeframe" value="any" checked /> Any timeframe</label>
-          <label><input type="radio" name="timeframe" value="old" /> Old (before 2010)</label>
-          <label><input type="radio" name="timeframe" value="new" /> New (after 2010)</label>
+        <div class="filter-group">
+          <label for="certSelect">Certificate</label>
+          <select id="certSelect" class="filter-select">
+            <option value="Any">Any</option>
+            <option value="U">U</option>
+            <option value="UA">UA</option>
+            <option value="A">A</option>
+            <option value="PG-13">PG-13</option>
+            <option value="R">R</option>
+            <option value="Not Rated">Not Rated</option>
+          </select>
+        </div>
+
+        <div class="filter-group">
+          <label for="sortBy">Sort By</label>
+          <select id="sortBy" class="filter-select">
+            <option value="none">Random</option>
+            <option value="year_desc">Year (Newest)</option>
+            <option value="year_asc">Year (Oldest)</option>
+            <option value="rating_desc">Rating (Highest)</option>
+            <option value="rating_asc">Rating (Lowest)</option>
+          </select>
+        </div>
+
+        <div class="filter-group">
+          <label for="count">Results Count</label>
+          <input id="count" type="number" min="0" value="20" class="filter-input" placeholder="0 for all" />
+        </div>
+
+        <div class="filter-group full-width">
+          <label>Timeframe</label>
+          <div class="radio-group">
+            <label class="radio-label">
+              <input type="radio" name="timeframe" value="any" checked />
+              <span>Any Time</span>
+            </label>
+            <label class="radio-label">
+              <input type="radio" name="timeframe" value="old" />
+              <span>Before 2010</span>
+            </label>
+            <label class="radio-label">
+              <input type="radio" name="timeframe" value="new" />
+              <span>After 2010</span>
+            </label>
+          </div>
         </div>
       </div>
-
-      <div class="control">
-        <label for="count">How many? (enter 0 for all)</label>
-        <input id="count" type="number" min="0" value="20" title="Enter 0 to show all matching results" />
-      </div>
-
-      <div class="control">
-        <label for="searchTerm">Search (title)</label>
-        <input id="searchTerm" type="search" placeholder="Search by title..." />
-      </div>
-
-      <div class="control">
-        <label for="sortBy">Sort by</label>
-        <select id="sortBy">
-          <option value="none">None (random)</option>
-          <option value="year_desc">Year (new → old)</option>
-          <option value="year_asc">Year (old → new)</option>
-          <option value="rating_desc">Rating (high → low)</option>
-          <option value="rating_asc">Rating (low → high)</option>
-        </select>
-      </div>
-
-      <div class="actions" style="margin-left:auto">
-        <button class="ghost" id="signInBtn">Sign in</button>
-        <span id="userLabel" style="margin-left:8px;color:var(--muted)"></span>
-        <button class="ghost" id="themeToggle" title="Toggle theme">🌙</button>
-        <button class="ghost" id="trendingBtn" title="Show trending">🔥 Trending</button>
-        <button class="ghost" id="favoritesBtn" title="Show favorites">★ Favorites</button>
-        <button class="ghost" id="watchLaterBtn" title="Watch later list">⏰ Watch Later</button>
-        <button class="ghost" id="libraryBtn" title="My library">📚 Library</button>
-        <button class="ghost" id="searchBtn">Search</button>
-        <button class="ghost" id="surprise">Surprise me</button>
-        <button class="primary" id="recommend">Recommend</button>
+      
+      <div class="filters-actions">
+        <button id="recommend" class="btn-primary">
+          <span class="btn-icon">🎯</span> Get Recommendations
+        </button>
+        <button id="resetFilters" class="btn-secondary">Reset Filters</button>
       </div>
     </div>
 
-    <!-- Ad Unit 1: After controls -->
-    <div style="text-align:center;margin:20px 0">
+    <!-- Ad Unit 1 -->
+    <div class="ad-container">
       <ins class="adsbygoogle"
            style="display:block"
            data-ad-client="ca-pub-5130984760773628"
@@ -122,13 +195,17 @@
       </script>
     </div>
 
-    <section class="trending-section" aria-label="Trending movies">
-      <h2 style="margin:0 0 8px;font-size:16px">Trending</h2>
-      <div id="trendingList" class="trending-list" aria-live="polite"></div>
+    <!-- Trending Section -->
+    <section class="section trending-section" id="trendingSection">
+      <div class="section-header">
+        <h2 class="section-title">🔥 Trending Now</h2>
+        <button class="btn-view-all" id="viewAllTrending">View All →</button>
+      </div>
+      <div id="trendingList" class="movie-grid"></div>
     </section>
 
-    <!-- Ad Unit 2: Between trending and results -->
-    <div style="text-align:center;margin:20px 0">
+    <!-- Ad Unit 2 -->
+    <div class="ad-container">
       <ins class="adsbygoogle"
            style="display:block"
            data-ad-client="ca-pub-5130984760773628"
@@ -140,52 +217,75 @@
       </script>
     </div>
 
-    <div id="results" class="results" aria-live="polite"></div>
+    <!-- Results Section -->
+    <section class="section results-section" id="resultsSection" style="display:none;">
+      <div class="section-header">
+        <h2 class="section-title">Search Results</h2>
+        <span id="resultsCount" class="results-count"></span>
+      </div>
+      <div id="results" class="movie-grid"></div>
+    </section>
 
-    <div class="footer">
-      Tip: If no results appear try selecting "Any" for genre or language, or increase the count.
-    </div>
+    <!-- Footer -->
+    <footer class="site-footer">
+      <div class="footer-content">
+        <p>💡 <strong>Tip:</strong> Use "Any" for genre/language or increase the count if no results appear.</p>
+        <p class="footer-note">Data powered by Wikipedia & TMDB</p>
+      </div>
+    </footer>
   </div>
 
+  </div>
+
+  <!-- Hidden button for surprise me functionality -->
+  <button id="surprise" style="display:none;"></button>
+
   <!-- Quick-view modal for in-page details -->
-  <div id="quickViewOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:2000;align-items:center;justify-content:center;padding:20px;overflow:auto;">
-    <div id="quickView" style="background:var(--card);color:var(--text);width:680px;max-width:100%;border-radius:10px;overflow:auto;box-shadow:0 12px 40px rgba(0,0,0,0.6);max-height:calc(100vh - 40px);">
-      <div style="display:flex;gap:12px;padding:14px;flex-direction:column">
-        <div style="display:flex;gap:12px">
-          <div id="qPoster" style="width:140px;height:210px;border-radius:6px;background:#222;background-size:cover;background-position:center"></div>
-          <div style="flex:1">
-            <h2 id="qTitle" style="margin:0 0 6px;font-size:18px"></h2>
-            <div id="qMeta" style="color:var(--muted);margin-bottom:8px"></div>
-            <p id="qDesc" style="margin:8px 0;color:var(--text)"></p>
-            <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
-              <button id="qFav" class="ghost">Add to favorites</button>
-              <button id="qWatch" class="ghost">Add to Watch Later</button>
-              <button id="qLibrary" class="ghost">Add to library</button>
-              <button id="qClose" class="ghost">Close</button>
+  <div id="quickViewOverlay" class="modal-overlay">
+    <div id="quickView" class="modal-content">
+      <button class="modal-close" id="qClose">✕</button>
+      <div class="modal-body">
+        <div class="movie-details-header">
+          <div id="qPoster" class="movie-poster-large"></div>
+          <div class="movie-info">
+            <h2 id="qTitle" class="movie-title-large"></h2>
+            <div id="qMeta" class="movie-meta"></div>
+            <p id="qDesc" class="movie-description"></p>
+            <div class="movie-actions">
+              <button id="qFav" class="btn-action">
+                <span class="btn-icon">★</span> Favorite
+              </button>
+              <button id="qWatch" class="btn-action">
+                <span class="btn-icon">⏰</span> Watch Later
+              </button>
+              <button id="qLibrary" class="btn-action">
+                <span class="btn-icon">📚</span> My Library
+              </button>
             </div>
           </div>
         </div>
 
-        <div id="qExtras" style="padding:12px 14px;border-top:1px solid rgba(255,255,255,0.02);display:flex;gap:16px;flex-direction:column">
-          <div>
-            <strong style="display:block;margin-bottom:8px">Top Cast</strong>
-            <div id="qCast" class="cast-grid"><div class="loading-container" style="padding:20px"><div class="movie-loader" style="font-size:16px">LOADING<span class="loading-dots"><span>.</span><span>.</span><span>.</span></span></div></div></div>
+        <div class="modal-sections">
+          <div class="modal-section">
+            <h3 class="modal-section-title">Top Cast</h3>
+            <div id="qCast" class="cast-grid"></div>
           </div>
-          <div>
-            <strong style="display:block;margin:12px 0 8px">Key Crew</strong>
-            <ul id="qCrew" class="crew-list"><div class="loading-container" style="padding:20px"><div class="movie-loader" style="font-size:16px">LOADING<span class="loading-dots"><span>.</span><span>.</span><span>.</span></span></div></div></ul>
+
+          <div class="modal-section">
+            <h3 class="modal-section-title">Key Crew</h3>
+            <ul id="qCrew" class="crew-list"></ul>
           </div>
-          <div>
-            <strong style="display:block;margin:12px 0 8px">Similar Movies</strong>
+
+          <div class="modal-section">
+            <h3 class="modal-section-title">Similar Movies</h3>
             <div class="similar-movies-container">
-              <div id="qSimilar" class="similar-movies-scroll">
-                <div class="loading-container" style="padding:20px"><div class="movie-loader" style="font-size:16px">LOADING<span class="loading-dots"><span>.</span><span>.</span><span>.</span></span></div></div>
-              </div>
+              <div id="qSimilar" class="similar-movies-scroll"></div>
             </div>
           </div>
-          <div>
-            <strong style="display:block;margin:12px 0 8px">Videos</strong>
-            <div id="qVideos" class="media-grid"><div class="loading-container" style="padding:20px"><div class="movie-loader" style="font-size:16px">LOADING<span class="loading-dots"><span>.</span><span>.</span><span>.</span></span></div></div></div>
+
+          <div class="modal-section">
+            <h3 class="modal-section-title">Videos & Trailers</h3>
+            <div id="qVideos" class="media-grid"></div>
           </div>
         </div>
       </div>
@@ -193,67 +293,69 @@
   </div>
 
   <!-- Sign-in modal -->
-  <div id="signInOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:3000;align-items:center;justify-content:center;padding:20px;">
-    <div style="background:var(--card);color:var(--text);width:420px;max-width:100%;border-radius:10px;padding:18px;box-shadow:0 12px 40px rgba(0,0,0,0.6);">
-      <h3 style="margin:0 0 8px">Sign in / Create account</h3>
-      <div id="signMsg" style="color:var(--muted);font-size:13px;margin-bottom:12px">Please sign in to use favorites, Watch Later and Library.</div>
-      
-      <!-- Google Sign-In Button -->
-      {% load socialaccount %}
-      {% get_providers as socialaccount_providers %}
-      {% if socialaccount_providers %}
-      <div style="margin-bottom:16px">
-        <a href="{% provider_login_url 'google' %}" 
-           class="google-signin-btn"
-           style="display:flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:10px;border-radius:6px;background:#fff;color:#000;text-decoration:none;font-weight:500;transition:all 0.2s;border:1px solid #ddd">
-          <svg width="18" height="18" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-            <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
-            <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
-            <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
-            <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
-            <path fill="none" d="M0 0h48v48H0z"/>
-          </svg>
-          Sign in with Google
-        </a>
-      </div>
-      
-      <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
-        <div style="flex:1;height:1px;background:rgba(255,255,255,0.1)"></div>
-        <span style="color:var(--muted);font-size:12px">OR</span>
-        <div style="flex:1;height:1px;background:rgba(255,255,255,0.1)"></div>
-      </div>
-      {% endif %}
-      
-      <label style="display:block;margin-bottom:6px;color:var(--muted)">Username</label>
-      <input id="signUser" type="text" style="width:100%;padding:8px;margin-bottom:8px;border-radius:6px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:inherit" />
-      <label style="display:block;margin-bottom:6px;color:var(--muted)">Password</label>
-      <input id="signPass" type="password" style="width:100%;padding:8px;margin-bottom:12px;border-radius:6px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:inherit" />
-      <div style="display:flex;gap:8px;align-items:center">
-        <button id="signInSubmit" class="primary">Sign in</button>
-        <button id="signUpSubmit" class="ghost">Create account</button>
-        <button id="signClose" class="ghost">Close</button>
+  <div id="signInOverlay" class="modal-overlay">
+    <div class="modal-content signin-modal">
+      <button class="modal-close" id="signClose">✕</button>
+      <div class="modal-body">
+        <h2 class="modal-title">Welcome to MovieFinder</h2>
+        <p class="modal-subtitle">Sign in to save your favorites, watch later list, and personal library</p>
+        
+        <!-- Google Sign-In Button -->
+        {% load socialaccount %}
+        {% get_providers as socialaccount_providers %}
+        {% if socialaccount_providers %}
+        <div class="signin-google">
+          <a href="{% provider_login_url 'google' %}" class="google-signin-btn">
+            <svg width="20" height="20" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
+              <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+              <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+              <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+              <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+            </svg>
+            <span>Continue with Google</span>
+          </a>
+        </div>
+        
+        <div class="signin-divider">
+          <span>or</span>
+        </div>
+        {% endif %}
+        
+        <div class="signin-form">
+          <div class="form-group">
+            <label for="signUser">Username</label>
+            <input id="signUser" type="text" class="form-input" placeholder="Enter your username" />
+          </div>
+          <div class="form-group">
+            <label for="signPass">Password</label>
+            <input id="signPass" type="password" class="form-input" placeholder="Enter your password" />
+          </div>
+          <div id="signMsg" class="form-message"></div>
+          <div class="form-actions">
+            <button id="signInSubmit" class="btn-primary full-width">Sign In</button>
+            <button id="signUpSubmit" class="btn-secondary full-width">Create Account</button>
+          </div>
+        </div>
       </div>
     </div>
   </div>
 
   <!-- Person profile modal -->
-  <div id="personOverlay" class="person-overlay">
-    <div class="person-modal" role="dialog" aria-modal="true" aria-labelledby="pName">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-        <h3 id="pName" style="margin:0;font-size:18px"></h3>
-        <div>
-          <button id="pClose" class="ghost">Close</button>
-        </div>
-      </div>
-      <div class="profile">
-        <img id="pPic" class="profile-pic" alt="Profile picture" />
-        <div style="flex:1">
-          <div id="pMeta" style="color:var(--muted);margin-bottom:8px"></div>
-          <div id="pBio" class="bio"><div class="loading-container" style="padding:20px"><div class="movie-loader" style="font-size:16px">LOADING<span class="loading-dots"><span>.</span><span>.</span><span>.</span></span></div></div></div>
-          <div style="margin-top:12px">
-            <strong style="display:block;margin-bottom:8px">Known for</strong>
-            <div id="pKnown" class="known-grid"></div>
+  <div id="personOverlay" class="modal-overlay person-overlay">
+    <div class="modal-content person-modal">
+      <button class="modal-close" id="pClose">✕</button>
+      <div class="modal-body">
+        <div class="person-header">
+          <img id="pPic" class="person-photo" alt="Profile picture" />
+          <div class="person-info">
+            <h2 id="pName" class="person-name"></h2>
+            <div id="pMeta" class="person-meta"></div>
           </div>
+        </div>
+        <div id="pBio" class="person-bio"></div>
+        <div class="person-section">
+          <h3 class="modal-section-title">Known For</h3>
+          <div id="pKnown" class="known-grid"></div>
         </div>
       </div>
     </div>

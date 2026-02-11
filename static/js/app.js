@@ -910,4 +910,88 @@ libraryBtn?.addEventListener('click', async () => {
 // Load trending on page load
 loadTrending();
 
+// New UI Element Handlers
+const showAdvancedBtn = document.getElementById('showAdvancedBtn');
+const closeAdvancedBtn = document.getElementById('closeAdvancedBtn');
+const advancedFilters = document.getElementById('advancedFilters');
+const surpriseBtn = document.getElementById('surpriseBtn');
+const resetFiltersBtn = document.getElementById('resetFilters');
+const filterChips = document.querySelectorAll('.filter-chip[data-genre]');
+
+// Show/Hide Advanced Filters
+showAdvancedBtn?.addEventListener('click', () => {
+    advancedFilters.style.display = 'block';
+    showAdvancedBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+});
+
+closeAdvancedBtn?.addEventListener('click', () => {
+    advancedFilters.style.display = 'none';
+});
+
+// Quick Genre Filter Chips
+filterChips.forEach(chip => {
+    chip.addEventListener('click', () => {
+        const genre = chip.getAttribute('data-genre');
+        genreEl.value = genre;
+        if (advancedFilters.style.display !== 'block') {
+            advancedFilters.style.display = 'block';
+        }
+        // Scroll to filters
+        advancedFilters.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+});
+
+// Surprise Me Button (redirects to hidden surprise button)
+surpriseBtn?.addEventListener('click', () => {
+    const hiddenSurprise = document.getElementById('surprise');
+    if (hiddenSurprise) {
+        hiddenSurprise.click();
+    }
+});
+
+// Reset Filters
+resetFiltersBtn?.addEventListener('click', () => {
+    genreEl.value = 'Any';
+    langEl.value = 'Any';
+    certEl.value = 'Any';
+    sortEl.value = 'none';
+    countEl.value = '20';
+    searchEl.value = '';
+    document.querySelector('input[name="timeframe"][value="any"]').checked = true;
+    showError('Filters reset');
+    setTimeout(() => errorContainer.textContent = '', 2000);
+});
+
+// Update results section visibility
+const resultsSection = document.getElementById('resultsSection');
+const originalRenderResults = renderResults;
+
+// Override renderResults to show/hide results section
+if (typeof renderResults === 'function') {
+    window.renderResults = function(movies) {
+        if (resultsSection && movies && movies.length > 0) {
+            resultsSection.style.display = 'block';
+            const resultsCount = document.getElementById('resultsCount');
+            if (resultsCount) {
+                resultsCount.textContent = `${movies.length} ${movies.length === 1 ? 'movie' : 'movies'} found`;
+            }
+        }
+        return originalRenderResults(movies);
+    };
+}
+
+// Update user label display
+if (window.IS_AUTHENTICATED && window.USERNAME) {
+    const userLabel = document.getElementById('userLabel');
+    if (userLabel) {
+        userLabel.textContent = window.USERNAME;
+    }
+    const signInBtn = document.getElementById('signInBtn');
+    if (signInBtn) {
+        signInBtn.style.background = 'transparent';
+        signInBtn.style.border = '1px solid var(--border)';
+    }
+}
+
 console.log('✅ Movie Recommender loaded successfully!');
+console.log('🎬 New UI features initialized');
