@@ -200,7 +200,22 @@ function renderResults(movies) {
     
     if (!movies || movies.length === 0) {
         resultsEl.innerHTML = '<div class="no-results">No movies found. Try different filters.</div>';
+        // Show results section even with no results
+        const resultsSection = document.getElementById('resultsSection');
+        if (resultsSection) {
+            resultsSection.style.display = 'block';
+        }
         return;
+    }
+    
+    // Show results section and update count
+    const resultsSection = document.getElementById('resultsSection');
+    if (resultsSection) {
+        resultsSection.style.display = 'block';
+        const resultsCount = document.getElementById('resultsCount');
+        if (resultsCount) {
+            resultsCount.textContent = `${movies.length} ${movies.length === 1 ? 'movie' : 'movies'} found`;
+        }
     }
     
     resultsEl.innerHTML = '';
@@ -957,28 +972,11 @@ resetFiltersBtn?.addEventListener('click', () => {
     sortEl.value = 'none';
     countEl.value = '20';
     searchEl.value = '';
-    document.querySelector('input[name="timeframe"][value="any"]').checked = true;
+    const anyTimeframe = document.querySelector('input[name="timeframe"][value="any"]');
+    if (anyTimeframe) anyTimeframe.checked = true;
     showError('Filters reset');
-    setTimeout(() => errorContainer.textContent = '', 2000);
+    setTimeout(() => clearError(), 2000);
 });
-
-// Update results section visibility
-const resultsSection = document.getElementById('resultsSection');
-const originalRenderResults = renderResults;
-
-// Override renderResults to show/hide results section
-if (typeof renderResults === 'function') {
-    window.renderResults = function(movies) {
-        if (resultsSection && movies && movies.length > 0) {
-            resultsSection.style.display = 'block';
-            const resultsCount = document.getElementById('resultsCount');
-            if (resultsCount) {
-                resultsCount.textContent = `${movies.length} ${movies.length === 1 ? 'movie' : 'movies'} found`;
-            }
-        }
-        return originalRenderResults(movies);
-    };
-}
 
 // Update user label display
 if (window.IS_AUTHENTICATED && window.USERNAME) {
