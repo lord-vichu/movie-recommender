@@ -879,8 +879,20 @@ def discover_movies(request):
 @require_http_methods(["GET"])
 def get_trending(request):
     """Get trending movies from TMDb and popular movies from Wikipedia"""
+    
+    def normalize_title(title):
+        """Normalize title for comparison by removing extra whitespace and converting to lowercase"""
+        if not title:
+            return ''
+        # Convert to lowercase, normalize whitespace (replace multiple spaces with single space)
+        import re
+        normalized = re.sub(r'\s+', ' ', title.lower().strip())
+        return normalized
+    
     try:
         movies = []
+        seen_titles = set()  # Track unique movie titles to prevent duplicates
+        seen_ids = set()  # Track unique movie IDs to prevent duplicates
         
         # Try to get TMDb trending movies
         try:
@@ -894,8 +906,18 @@ def get_trending(request):
                 data = response.json()
                 
                 for movie in data.get('results', [])[:15]:
+                    movie_id = movie.get('id')
+                    movie_title = normalize_title(movie.get('title') or movie.get('original_title', ''))
+                    
+                    # Skip if we've already seen this movie (by ID or title)
+                    if movie_id in seen_ids or movie_title in seen_titles:
+                        continue
+                    
+                    seen_ids.add(movie_id)
+                    seen_titles.add(movie_title)
+                    
                     movies.append({
-                        'id': movie.get('id'),
+                        'id': movie_id,
                         'title': movie.get('title') or movie.get('original_title'),
                         'year': int(movie.get('release_date', '0000')[:4]) if movie.get('release_date') else None,
                         'poster': f"{settings.TMDB_IMAGE_BASE}{movie.get('poster_path')}" if movie.get('poster_path') else None,
@@ -915,7 +937,22 @@ def get_trending(request):
                 if len(movies) >= 20:
                     break
                 wiki_movies = search_wikipedia_movies(term, needed, 'en')
-                movies.extend(wiki_movies)
+                
+                # Add only unique movies from Wikipedia
+                for wiki_movie in wiki_movies:
+                    if len(movies) >= 20:
+                        break
+                    
+                    wiki_title = normalize_title(wiki_movie.get('title', ''))
+                    wiki_id = wiki_movie.get('id')
+                    
+                    # Skip if we've already seen this movie
+                    if wiki_title in seen_titles or wiki_id in seen_ids:
+                        continue
+                    
+                    seen_titles.add(wiki_title)
+                    seen_ids.add(wiki_id)
+                    movies.append(wiki_movie)
         except Exception as wiki_err:
             print(f"Wikipedia trending fetch error: {wiki_err}")
         
