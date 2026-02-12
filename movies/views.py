@@ -9,6 +9,7 @@ from django.conf import settings
 from .models import Favorite, WatchLater, Library, UserRating
 import json
 import urllib.parse
+import random
 
 try:
     from Levenshtein import ratio as levenshtein_ratio
@@ -21,6 +22,89 @@ except ImportError:
         if a in b or b in a:
             return 0.8
         return 0.0
+
+
+def get_mock_movies(count=20, genre=None, language=None, search_query=None):
+    """
+    Provide mock movie data when external APIs are unavailable.
+    This ensures the application remains functional for demonstration purposes.
+    """
+    mock_data = [
+        {'id': 1, 'title': 'The Shawshank Redemption', 'year': 1994, 'genres': ['Drama'], 'lang': 'en', 'rating': 9.3, 'desc': 'Two imprisoned men bond over a number of years, finding solace and eventual redemption through acts of common decency.'},
+        {'id': 2, 'title': 'The Godfather', 'year': 1972, 'genres': ['Crime', 'Drama'], 'lang': 'en', 'rating': 9.2, 'desc': 'The aging patriarch of an organized crime dynasty transfers control of his clandestine empire to his reluctant son.'},
+        {'id': 3, 'title': 'The Dark Knight', 'year': 2008, 'genres': ['Action', 'Crime', 'Drama'], 'lang': 'en', 'rating': 9.0, 'desc': 'When the menace known as the Joker wreaks havoc and chaos on the people of Gotham, Batman must accept one of the greatest psychological and physical tests.'},
+        {'id': 4, 'title': 'Pulp Fiction', 'year': 1994, 'genres': ['Crime', 'Drama'], 'lang': 'en', 'rating': 8.9, 'desc': 'The lives of two mob hitmen, a boxer, a gangster and his wife intertwine in four tales of violence and redemption.'},
+        {'id': 5, 'title': 'Inception', 'year': 2010, 'genres': ['Action', 'Sci-Fi', 'Thriller'], 'lang': 'en', 'rating': 8.8, 'desc': 'A thief who steals corporate secrets through the use of dream-sharing technology is given the inverse task of planting an idea.'},
+        {'id': 6, 'title': 'Forrest Gump', 'year': 1994, 'genres': ['Drama', 'Romance'], 'lang': 'en', 'rating': 8.8, 'desc': 'The presidencies of Kennedy and Johnson, the Vietnam War, and other historical events unfold from the perspective of an Alabama man.'},
+        {'id': 7, 'title': 'The Matrix', 'year': 1999, 'genres': ['Action', 'Sci-Fi'], 'lang': 'en', 'rating': 8.7, 'desc': 'A computer hacker learns from mysterious rebels about the true nature of his reality and his role in the war against its controllers.'},
+        {'id': 8, 'title': 'Goodfellas', 'year': 1990, 'genres': ['Crime', 'Drama'], 'lang': 'en', 'rating': 8.7, 'desc': 'The story of Henry Hill and his life in the mob, covering his relationship with his wife and his partners in crime.'},
+        {'id': 9, 'title': 'Interstellar', 'year': 2014, 'genres': ['Sci-Fi', 'Drama'], 'lang': 'en', 'rating': 8.6, 'desc': 'A team of explorers travel through a wormhole in space in an attempt to ensure humanity survival.'},
+        {'id': 10, 'title': 'The Lion King', 'year': 1994, 'genres': ['Animation', 'Adventure', 'Drama'], 'lang': 'en', 'rating': 8.5, 'desc': 'Lion prince Simba flees his kingdom after the murder of his father, only to learn the true meaning of responsibility and bravery.'},
+        {'id': 11, 'title': 'Gladiator', 'year': 2000, 'genres': ['Action', 'Drama'], 'lang': 'en', 'rating': 8.5, 'desc': 'A former Roman General sets out to exact vengeance against the corrupt emperor who murdered his family and sent him into slavery.'},
+        {'id': 12, 'title': 'The Prestige', 'year': 2006, 'genres': ['Drama', 'Mystery', 'Thriller'], 'lang': 'en', 'rating': 8.5, 'desc': 'After a tragic accident, two stage magicians engage in a battle to create the ultimate illusion while sacrificing everything they have.'},
+        {'id': 13, 'title': 'The Departed', 'year': 2006, 'genres': ['Crime', 'Drama', 'Thriller'], 'lang': 'en', 'rating': 8.5, 'desc': 'An undercover cop and a mole in the police try to identify each other while infiltrating an Irish gang in Boston.'},
+        {'id': 14, 'title': 'Whiplash', 'year': 2014, 'genres': ['Drama', 'Music'], 'lang': 'en', 'rating': 8.5, 'desc': 'A promising young drummer enrolls at a cut-throat music conservatory where his dreams of greatness are mentored by an instructor.'},
+        {'id': 15, 'title': 'The Avengers', 'year': 2012, 'genres': ['Action', 'Sci-Fi'], 'lang': 'en', 'rating': 8.0, 'desc': 'Earth mightiest heroes must come together and learn to fight as a team to stop a villain from enslaving humanity.'},
+        {'id': 16, 'title': 'Joker', 'year': 2019, 'genres': ['Crime', 'Drama', 'Thriller'], 'lang': 'en', 'rating': 8.4, 'desc': 'In Gotham City, mentally troubled comedian Arthur Fleck embarks on a downward spiral of revolution and bloody crime.'},
+        {'id': 17, 'title': 'Parasite', 'year': 2019, 'genres': ['Comedy', 'Drama', 'Thriller'], 'lang': 'ko', 'rating': 8.6, 'desc': 'Greed and class discrimination threaten the newly formed symbiotic relationship between the wealthy Park family and the destitute Kim clan.'},
+        {'id': 18, 'title': 'Dangal', 'year': 2016, 'genres': ['Action', 'Biography', 'Drama'], 'lang': 'hi', 'rating': 8.4, 'desc': 'Former wrestler Mahavir Singh Phogat trains his daughters to become world-class wrestlers.'},
+        {'id': 19, 'title': '3 Idiots', 'year': 2009, 'genres': ['Comedy', 'Drama'], 'lang': 'hi', 'rating': 8.4, 'desc': 'Two friends embark on a quest for a lost buddy. On this journey, they encounter a long forgotten bet, a wedding they must crash, and a funeral that goes impossibly out of control.'},
+        {'id': 20, 'title': 'Spider-Man: Into the Spider-Verse', 'year': 2018, 'genres': ['Animation', 'Action', 'Adventure'], 'lang': 'en', 'rating': 8.4, 'desc': 'Teen Miles Morales becomes Spider-Man of his reality, crossing paths with counterparts from other dimensions.'},
+        {'id': 21, 'title': 'Avengers: Endgame', 'year': 2019, 'genres': ['Action', 'Sci-Fi'], 'lang': 'en', 'rating': 8.4, 'desc': 'After the devastating events of Infinity War, the Avengers assemble once more to reverse Thanos actions and restore balance to the universe.'},
+        {'id': 22, 'title': 'The Conjuring', 'year': 2013, 'genres': ['Horror', 'Mystery', 'Thriller'], 'lang': 'en', 'rating': 7.5, 'desc': 'Paranormal investigators work to help a family terrorized by a dark presence in their farmhouse.'},
+        {'id': 23, 'title': 'Get Out', 'year': 2017, 'genres': ['Horror', 'Mystery', 'Thriller'], 'lang': 'en', 'rating': 7.7, 'desc': 'A young African-American visits his white girlfriend family estate, where his simmering uneasiness becomes full-blown paranoia.'},
+        {'id': 24, 'title': 'A Quiet Place', 'year': 2018, 'genres': ['Horror', 'Sci-Fi'], 'lang': 'en', 'rating': 7.5, 'desc': 'In a post-apocalyptic world, a family is forced to live in silence while hiding from monsters with ultra-sensitive hearing.'},
+        {'id': 25, 'title': 'The Notebook', 'year': 2004, 'genres': ['Drama', 'Romance'], 'lang': 'en', 'rating': 7.8, 'desc': 'A poor yet passionate young man falls in love with a rich young woman, giving her a sense of freedom.'},
+        {'id': 26, 'title': 'Titanic', 'year': 1997, 'genres': ['Drama', 'Romance'], 'lang': 'en', 'rating': 7.9, 'desc': 'A seventeen-year-old aristocrat falls in love with a kind but poor artist aboard the luxurious, ill-fated R.M.S. Titanic.'},
+        {'id': 27, 'title': 'La La Land', 'year': 2016, 'genres': ['Comedy', 'Drama', 'Romance'], 'lang': 'en', 'rating': 8.0, 'desc': 'While navigating their careers in Los Angeles, a pianist and an actress fall in love while attempting to reconcile their aspirations.'},
+        {'id': 28, 'title': 'John Wick', 'year': 2014, 'genres': ['Action', 'Crime', 'Thriller'], 'lang': 'en', 'rating': 7.4, 'desc': 'An ex-hit-man comes out of retirement to track down the gangsters that killed his dog and took everything from him.'},
+        {'id': 29, 'title': 'Mad Max: Fury Road', 'year': 2015, 'genres': ['Action', 'Sci-Fi'], 'lang': 'en', 'rating': 8.1, 'desc': 'In a post-apocalyptic wasteland, a woman rebels against a tyrannical ruler in search for her homeland.'},
+        {'id': 30, 'title': 'Toy Story', 'year': 1995, 'genres': ['Animation', 'Adventure', 'Comedy'], 'lang': 'en', 'rating': 8.3, 'desc': 'A cowboy doll is profoundly threatened when a new spaceman figure supplants him as top toy in a boy\'s room.'},
+    ]
+    
+    # Filter by genre if specified
+    if genre and genre != 'Any':
+        filtered = [m for m in mock_data if genre.lower() in [g.lower() for g in m['genres']]]
+        if filtered:
+            mock_data = filtered
+    
+    # Filter by language if specified
+    lang_map = {'English': 'en', 'Hindi': 'hi', 'Malayalam': 'ml', 'Tamil': 'ta', 'Korean': 'ko'}
+    if language and language != 'Any' and language in lang_map:
+        lang_code = lang_map[language]
+        filtered = [m for m in mock_data if m['lang'] == lang_code]
+        if filtered:
+            mock_data = filtered
+    
+    # Filter by search query if specified
+    if search_query:
+        query_lower = search_query.lower()
+        filtered = [m for m in mock_data if query_lower in m['title'].lower()]
+        if filtered:
+            mock_data = filtered
+    
+    # Shuffle and limit results
+    random.shuffle(mock_data)
+    result_movies = mock_data[:count]
+    
+    # Format results
+    formatted = []
+    for movie in result_movies:
+        formatted.append({
+            'id': movie['id'],
+            'title': movie['title'],
+            'year': movie['year'],
+            'genres': movie['genres'],
+            'lang': movie['lang'],
+            'desc': movie['desc'],
+            'poster': None,  # No poster URLs in mock data
+            'rating': movie['rating'],
+            'backdrop': None,
+            'source': 'mock'
+        })
+    
+    return formatted
+
 
 
 def get_wikipedia_summary(search_term):
@@ -516,9 +600,13 @@ def discover_movies(request):
             # Remove duplicates
             search_terms = list(dict.fromkeys(search_terms))
             
-            # Search TMDb with all variations (limit to first 10 terms to avoid too many requests)
+            # Try to search TMDb with all variations (limit to first 10 terms to avoid too many requests)
+            # If TMDb is unavailable, we'll fallback to Wikipedia
             seen_ids = set()
+            tmdb_available = True
             for term in search_terms[:10]:
+                if not tmdb_available:
+                    break
                 try:
                     # Search multiple pages for each term
                     for page in range(1, 3):  # Search 2 pages per term
@@ -546,8 +634,10 @@ def discover_movies(request):
                             if len(results) > 15:
                                 break
                 except Exception as e:
-                    print(f"Search error for term '{term}': {e}")
-                    continue
+                    print(f"TMDb search error for term '{term}': {e}")
+                    # Mark TMDb as unavailable and break out to use Wikipedia
+                    tmdb_available = False
+                    break
                 
                 # Stop if we have enough results
                 if len(tmdb_results) > 50:
@@ -626,21 +716,27 @@ def discover_movies(request):
             else:
                 params['primary_release_date.lte'] = f'{current_year}-12-31'
             
-            # Fetch multiple pages
+            # Try to fetch multiple pages from TMDb
             pages = min(15, max(1, count // 20))
             all_movies = []
+            tmdb_available = True
             
-            for page in range(1, pages + 1):
-                params['page'] = page
-                response = requests.get(
-                    f'{settings.TMDB_BASE_URL}/discover/movie',
-                    params=params,
-                    timeout=10
-                )
-                
-                if response.status_code == 200:
-                    data = response.json()
-                    all_movies.extend(data.get('results', []))
+            try:
+                for page in range(1, pages + 1):
+                    params['page'] = page
+                    response = requests.get(
+                        f'{settings.TMDB_BASE_URL}/discover/movie',
+                        params=params,
+                        timeout=10
+                    )
+                    
+                    if response.status_code == 200:
+                        data = response.json()
+                        all_movies.extend(data.get('results', []))
+            except Exception as e:
+                print(f"TMDb discover error: {e}")
+                # Mark TMDb as unavailable and continue with Wikipedia fallback
+                tmdb_available = False
             
             # Format movies
             for movie in all_movies[:count]:
@@ -661,46 +757,65 @@ def discover_movies(request):
             remaining_count = count - len(movies)
             print(f"TMDb returned {len(movies)} movies, need {remaining_count} more")
             
-            # ALWAYS search Wikipedia for language-specific queries to ensure we get 20 movies
-            if language != 'Any':
-                # Create language-specific search queries for Wikipedia
-                language_names = {
-                    'English': 'english', 'Hindi': 'hindi', 'Malayalam': 'malayalam',
-                    'Tamil': 'tamil', 'Korean': 'korean'
-                }
-                if language in language_names:
-                    lang_name = language_names[language]
-                    # ALWAYS request MORE than needed from Wikipedia to ensure we get enough
-                    wiki_count_needed = count * 2  # Request double to ensure we get enough
-                    print(f"Searching Wikipedia for {wiki_count_needed} {lang_name} movies")
-                    
-                    # Try multiple search terms and KEEP ADDING until we have enough
-                    search_terms = [
-                        lang_name,
-                        f"{lang_name} cinema",
-                        f"{lang_name} film",
-                        f"{lang_name}-language",
-                        f"{lang_name} movies",
-                    ]
-                    
-                    for search_term in search_terms:
-                        if len(movies) >= count:
-                            break
-                        # Request MORE from each search to ensure we get enough
-                        wiki_movies = search_wikipedia_movies(search_term, wiki_count_needed)
-                        print(f"Wikipedia search '{search_term}' returned {len(wiki_movies)} movies")
-                        movies.extend(wiki_movies)
+            # If TMDb is completely unavailable or we need more movies, use Wikipedia
+            if not tmdb_available or remaining_count > 0:
+                # ALWAYS search Wikipedia for language-specific queries to ensure we get 20 movies
+                if language != 'Any':
+                    # Create language-specific search queries for Wikipedia
+                    language_names = {
+                        'English': 'english', 'Hindi': 'hindi', 'Malayalam': 'malayalam',
+                        'Tamil': 'tamil', 'Korean': 'korean'
+                    }
+                    if language in language_names:
+                        lang_name = language_names[language]
+                        # ALWAYS request MORE than needed from Wikipedia to ensure we get enough
+                        wiki_count_needed = max(count * 2, remaining_count * 2)  # Request double to ensure we get enough
+                        print(f"Searching Wikipedia for {wiki_count_needed} {lang_name} movies")
+                        
+                        # Try multiple search terms and KEEP ADDING until we have enough
+                        search_terms = [
+                            lang_name,
+                            f"{lang_name} cinema",
+                            f"{lang_name} film",
+                            f"{lang_name}-language",
+                            f"{lang_name} movies",
+                        ]
+                        
+                        for search_term in search_terms:
+                            if len(movies) >= count:
+                                break
+                            # Request MORE from each search to ensure we get enough
+                            wiki_movies = search_wikipedia_movies(search_term, wiki_count_needed)
+                            print(f"Wikipedia search '{search_term}' returned {len(wiki_movies)} movies")
+                            movies.extend(wiki_movies)
                     
                     print(f"After Wikipedia: Total {len(movies)} movies")
-            
-            # If genre was selected and we still need more, search Wikipedia
-            elif remaining_count > 0 and selected_genre_name and selected_genre_name != 'Any':
-                wiki_query = f"{selected_genre_name.lower()}"
-                print(f"Searching Wikipedia for {remaining_count} {wiki_query} movies")
-                wiki_movies = search_wikipedia_movies(wiki_query, remaining_count)
-                movies.extend(wiki_movies)
+                
+                # If genre was selected and we still need more, search Wikipedia
+                if len(movies) < count and selected_genre_name and selected_genre_name != 'Any':
+                    remaining_after_language = count - len(movies)
+                    wiki_query = f"{selected_genre_name.lower()}"
+                    print(f"Searching Wikipedia for {remaining_after_language} {wiki_query} movies")
+                    wiki_movies = search_wikipedia_movies(wiki_query, remaining_after_language * 2)
+                    movies.extend(wiki_movies)
+                
+                # If still no movies, provide some default Wikipedia content
+                if len(movies) == 0:
+                    print("No movies from TMDb or filters, getting default Wikipedia movies")
+                    default_searches = ['popular films', '2024 films', 'cinema']
+                    for search_term in default_searches:
+                        if len(movies) >= count:
+                            break
+                        wiki_movies = search_wikipedia_movies(search_term, count)
+                        movies.extend(wiki_movies)
         
         print(f"Final movie count: {len(movies)}")
+        
+        # If we still have no movies after all attempts, use mock data as final fallback
+        if len(movies) == 0:
+            print("All external APIs failed, using mock data")
+            movies = get_mock_movies(count, genre, language, search_query)
+        
         return JsonResponse({'movies': movies[:count]})  # Limit to requested count
     
     except Exception as e:
@@ -714,40 +829,52 @@ def get_trending(request):
     try:
         movies = []
         
-        # Get TMDb trending movies
-        response = requests.get(
-            f'{settings.TMDB_BASE_URL}/trending/movie/day',
-            params={'api_key': settings.TMDB_API_KEY},
-            timeout=10
-        )
-        
-        if response.status_code == 200:
-            data = response.json()
-            
-            for movie in data.get('results', [])[:15]:
-                movies.append({
-                    'id': movie.get('id'),
-                    'title': movie.get('title') or movie.get('original_title'),
-                    'year': int(movie.get('release_date', '0000')[:4]) if movie.get('release_date') else None,
-                    'poster': f"{settings.TMDB_IMAGE_BASE}{movie.get('poster_path')}" if movie.get('poster_path') else None,
-                    'rating': round(movie.get('vote_average', 0), 1) if movie.get('vote_average') else None,
-                    'source': 'tmdb'
-                })
-        
-        # Add some popular Wikipedia movies to supplement
+        # Try to get TMDb trending movies
         try:
-            wiki_search_terms = ['2024 films', '2025 films', 'blockbuster films']
+            response = requests.get(
+                f'{settings.TMDB_BASE_URL}/trending/movie/day',
+                params={'api_key': settings.TMDB_API_KEY},
+                timeout=10
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                
+                for movie in data.get('results', [])[:15]:
+                    movies.append({
+                        'id': movie.get('id'),
+                        'title': movie.get('title') or movie.get('original_title'),
+                        'year': int(movie.get('release_date', '0000')[:4]) if movie.get('release_date') else None,
+                        'poster': f"{settings.TMDB_IMAGE_BASE}{movie.get('poster_path')}" if movie.get('poster_path') else None,
+                        'rating': round(movie.get('vote_average', 0), 1) if movie.get('vote_average') else None,
+                        'source': 'tmdb'
+                    })
+        except Exception as tmdb_err:
+            print(f"TMDb trending fetch error: {tmdb_err}")
+            # Continue to Wikipedia fallback
+        
+        # Add Wikipedia movies to supplement or replace TMDb results if unavailable
+        try:
+            # Request more if we don't have enough from TMDb
+            needed = max(20 - len(movies), 10)
+            wiki_search_terms = ['2024 films', '2025 films', 'blockbuster films', 'popular films']
             for term in wiki_search_terms:
-                wiki_movies = search_wikipedia_movies(term, 5)
-                movies.extend(wiki_movies[:2])  # Add 2 from each search
                 if len(movies) >= 20:
                     break
+                wiki_movies = search_wikipedia_movies(term, needed)
+                movies.extend(wiki_movies)
         except Exception as wiki_err:
             print(f"Wikipedia trending fetch error: {wiki_err}")
+        
+        # If still no movies, use mock data as final fallback
+        if len(movies) == 0:
+            print("All APIs failed for trending, using mock data")
+            movies = get_mock_movies(20)
         
         return JsonResponse({'trending': movies[:20]})
     
     except Exception as e:
+        print(f"Error in get_trending: {e}")
         return JsonResponse({'error': str(e)}, status=500)
 
 
@@ -755,19 +882,24 @@ def get_trending(request):
 def get_movie_details(request, movie_id):
     """Get detailed movie information"""
     try:
-        response = requests.get(
-            f'{settings.TMDB_BASE_URL}/movie/{movie_id}',
-            params={
-                'api_key': settings.TMDB_API_KEY,
-                'append_to_response': 'credits,videos,images,similar,release_dates'
-            },
-            timeout=10
-        )
-        
-        if response.status_code != 200:
-            return JsonResponse({'error': 'Movie not found'}, status=404)
-        
-        movie = response.json()
+        # Try to get movie details from TMDb
+        try:
+            response = requests.get(
+                f'{settings.TMDB_BASE_URL}/movie/{movie_id}',
+                params={
+                    'api_key': settings.TMDB_API_KEY,
+                    'append_to_response': 'credits,videos,images,similar,release_dates'
+                },
+                timeout=10
+            )
+            
+            if response.status_code != 200:
+                return JsonResponse({'error': 'Movie not found'}, status=404)
+            
+            movie = response.json()
+        except Exception as tmdb_err:
+            print(f"TMDb movie details fetch error: {tmdb_err}")
+            return JsonResponse({'error': 'Unable to fetch movie details. TMDb API is unavailable.'}, status=503)
         
         # Format response
         data = {
@@ -851,19 +983,24 @@ def get_movie_details(request, movie_id):
 def get_person_details(request, person_id):
     """Get person (actor/director) details"""
     try:
-        response = requests.get(
-            f'{settings.TMDB_BASE_URL}/person/{person_id}',
-            params={
-                'api_key': settings.TMDB_API_KEY,
-                'append_to_response': 'movie_credits'
-            },
-            timeout=10
-        )
-        
-        if response.status_code != 200:
-            return JsonResponse({'error': 'Person not found'}, status=404)
-        
-        person = response.json()
+        # Try to get person details from TMDb
+        try:
+            response = requests.get(
+                f'{settings.TMDB_BASE_URL}/person/{person_id}',
+                params={
+                    'api_key': settings.TMDB_API_KEY,
+                    'append_to_response': 'movie_credits'
+                },
+                timeout=10
+            )
+            
+            if response.status_code != 200:
+                return JsonResponse({'error': 'Person not found'}, status=404)
+            
+            person = response.json()
+        except Exception as tmdb_err:
+            print(f"TMDb person details fetch error: {tmdb_err}")
+            return JsonResponse({'error': 'Unable to fetch person details. TMDb API is unavailable.'}, status=503)
         
         data = {
             'id': person.get('id'),

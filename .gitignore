@@ -32,3 +32,6 @@ media/
 
 # Environment variables
 .env
+
+# Temporary files
+tmpclaude-*-cwd
