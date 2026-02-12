@@ -314,7 +314,7 @@ async function discoverMovies() {
     try {
         console.log('discoverMovies called');
         clearError();
-        resultsEl.innerHTML = '<div class="loading-container"><div class="movie-loader">MOVIE RECOMMENDER<span class="loading-dots"><span>.</span><span>.</span><span>.</span></span></div></div>';
+        resultsEl.innerHTML = '<div class="loading-container"><div class="logo-loader"><img src="/static/images/logo.svg" alt="Loading..."></div><div class="movie-loader">Loading<span class="loading-dots"><span>.</span><span>.</span><span>.</span></span></div></div>';
         
         const genre = genreEl.value;
         const language = langEl.value;
@@ -690,10 +690,10 @@ async function openPersonProfile(personId) {
         if (!overlay || !nameEl) return;
         
         // Show loading state
-        nameEl.innerHTML = '<div class="movie-loader" style="font-size:18px">LOADING<span class="loading-dots"><span>.</span><span>.</span><span>.</span></span></div>';
+        nameEl.innerHTML = '<div style="display:flex;align-items:center;gap:10px;"><div class="logo-loader" style="width:40px;height:40px;"><img src="/static/images/logo.svg" alt="Loading..."></div><div class="movie-loader" style="font-size:18px">Loading<span class="loading-dots"><span>.</span><span>.</span><span>.</span></span></div></div>';
         if (meta) meta.textContent = '';
-        if (bio) bio.innerHTML = '<div class="loading-container" style="padding:20px"><div class="movie-loader" style="font-size:16px">LOADING<span class="loading-dots"><span>.</span><span>.</span><span>.</span></span></div></div>';
-        if (knownEl) knownEl.innerHTML = '<div class="loading-container" style="padding:20px"><div class="movie-loader" style="font-size:16px">LOADING<span class="loading-dots"><span>.</span><span>.</span><span>.</span></span></div></div>';
+        if (bio) bio.innerHTML = '<div class="loading-container" style="padding:20px"><div class="logo-loader" style="width:50px;height:50px;"><img src="/static/images/logo.svg" alt="Loading..."></div><div class="movie-loader" style="font-size:16px">Loading<span class="loading-dots"><span>.</span><span>.</span><span>.</span></span></div></div>';
+        if (knownEl) knownEl.innerHTML = '<div class="loading-container" style="padding:20px"><div class="logo-loader" style="width:50px;height:50px;"><img src="/static/images/logo.svg" alt="Loading..."></div><div class="movie-loader" style="font-size:16px">Loading<span class="loading-dots"><span>.</span><span>.</span><span>.</span></span></div></div>';
         overlay.style.display = 'flex';
         
         // Fetch person details

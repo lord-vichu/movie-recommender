@@ -1,0 +1,539 @@
+{% load static %}
+{% load socialaccount %}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="csrf-token" content="{{ csrf_token }}">
+  <title>Welcome to MovieFinder - Discover Your Next Favorite Movie</title>
+  <meta name="description" content="Sign in to discover personalized movie recommendations based on genre, language, and your preferences.">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎬</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      overflow-x: hidden;
+    }
+    
+    .landing-container {
+      max-width: 1200px;
+      width: 100%;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 40px;
+      align-items: center;
+      animation: fadeIn 0.8s ease-in;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .intro-section {
+      color: white;
+      padding: 40px;
+      animation: slideInLeft 0.8s ease-out;
+    }
+    
+    @keyframes slideInLeft {
+      from { opacity: 0; transform: translateX(-30px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+    
+    .logo-container {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+    
+    .logo-container img {
+      width: 80px;
+      height: 80px;
+      filter: drop-shadow(0 4px 20px rgba(0,0,0,0.3));
+      animation: logoFloat 3s ease-in-out infinite;
+    }
+    
+    @keyframes logoFloat {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+    
+    .logo-container h1 {
+      font-size: 48px;
+      font-weight: 700;
+      text-shadow: 0 2px 10px rgba(0,0,0,0.3);
+    }
+    
+    .intro-section h2 {
+      font-size: 36px;
+      margin-bottom: 20px;
+      font-weight: 600;
+      line-height: 1.3;
+    }
+    
+    .intro-section p {
+      font-size: 18px;
+      line-height: 1.8;
+      margin-bottom: 15px;
+      opacity: 0.95;
+    }
+    
+    .features {
+      margin-top: 30px;
+      display: grid;
+      gap: 15px;
+    }
+    
+    .feature-item {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      padding: 15px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      backdrop-filter: blur(10px);
+      transition: transform 0.3s ease, background 0.3s ease;
+    }
+    
+    .feature-item:hover {
+      transform: translateX(10px);
+      background: rgba(255, 255, 255, 0.15);
+    }
+    
+    .feature-icon {
+      font-size: 32px;
+    }
+    
+    .feature-text {
+      flex: 1;
+    }
+    
+    .feature-text h3 {
+      font-size: 18px;
+      margin-bottom: 5px;
+    }
+    
+    .feature-text p {
+      font-size: 14px;
+      opacity: 0.9;
+      margin: 0;
+    }
+    
+    .signin-section {
+      background: white;
+      padding: 50px;
+      border-radius: 24px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      animation: slideInRight 0.8s ease-out;
+    }
+    
+    @keyframes slideInRight {
+      from { opacity: 0; transform: translateX(30px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+    
+    .signin-section h2 {
+      font-size: 32px;
+      margin-bottom: 10px;
+      color: #333;
+      text-align: center;
+    }
+    
+    .signin-section p {
+      text-align: center;
+      color: #666;
+      margin-bottom: 30px;
+      font-size: 16px;
+    }
+    
+    .google-signin-btn {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      padding: 16px 24px;
+      background: white;
+      border: 2px solid #ddd;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      color: #333;
+      font-family: 'Poppins', sans-serif;
+    }
+    
+    .google-signin-btn:hover {
+      border-color: #667eea;
+      background: #f8f9ff;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+    }
+    
+    .signin-divider {
+      text-align: center;
+      margin: 30px 0;
+      position: relative;
+    }
+    
+    .signin-divider::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 50%;
+      height: 1px;
+      background: #ddd;
+    }
+    
+    .signin-divider span {
+      background: white;
+      padding: 0 15px;
+      color: #999;
+      position: relative;
+      z-index: 1;
+    }
+    
+    .form-group {
+      margin-bottom: 20px;
+    }
+    
+    .form-group label {
+      display: block;
+      margin-bottom: 8px;
+      color: #333;
+      font-weight: 500;
+      font-size: 14px;
+    }
+    
+    .form-input {
+      width: 100%;
+      padding: 14px 16px;
+      border: 2px solid #e0e0e0;
+      border-radius: 10px;
+      font-size: 15px;
+      transition: all 0.3s ease;
+      font-family: 'Poppins', sans-serif;
+    }
+    
+    .form-input:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+    
+    .form-message {
+      margin: 15px 0;
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 14px;
+      display: none;
+    }
+    
+    .form-message.error {
+      background: #fee;
+      color: #c33;
+      border: 1px solid #fcc;
+      display: block;
+    }
+    
+    .form-message.success {
+      background: #efe;
+      color: #3c3;
+      border: 1px solid #cfc;
+      display: block;
+    }
+    
+    .btn-primary {
+      width: 100%;
+      padding: 16px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      margin-bottom: 12px;
+      font-family: 'Poppins', sans-serif;
+    }
+    
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+    }
+    
+    .btn-secondary {
+      width: 100%;
+      padding: 16px;
+      background: white;
+      color: #667eea;
+      border: 2px solid #667eea;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-family: 'Poppins', sans-serif;
+    }
+    
+    .btn-secondary:hover {
+      background: #f8f9ff;
+      transform: translateY(-2px);
+    }
+    
+    @media (max-width: 968px) {
+      .landing-container {
+        grid-template-columns: 1fr;
+        gap: 30px;
+      }
+      
+      .intro-section {
+        text-align: center;
+        padding: 20px;
+      }
+      
+      .logo-container {
+        justify-content: center;
+      }
+      
+      .feature-item {
+        flex-direction: column;
+        text-align: center;
+      }
+      
+      .signin-section {
+        padding: 30px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="landing-container">
+    <!-- Introduction Section -->
+    <div class="intro-section">
+      <div class="logo-container">
+        <img src="{% static 'images/logo.svg' %}" alt="MovieFinder Logo">
+        <h1>🎬 MovieFinder</h1>
+      </div>
+      
+      <h2>Discover Your Next Favorite Movie</h2>
+      <p>Welcome to MovieFinder, your personalized movie recommendation platform. Sign in to unlock a world of cinematic adventures tailored just for you.</p>
+      
+      <div class="features">
+        <div class="feature-item">
+          <div class="feature-icon">🎯</div>
+          <div class="feature-text">
+            <h3>Personalized Recommendations</h3>
+            <p>Get movie suggestions based on your preferences, favorite genres, and viewing history</p>
+          </div>
+        </div>
+        
+        <div class="feature-item">
+          <div class="feature-icon">⭐</div>
+          <div class="feature-text">
+            <h3>Save Your Favorites</h3>
+            <p>Create your personal collection of favorite movies and manage your watch later list</p>
+          </div>
+        </div>
+        
+        <div class="feature-item">
+          <div class="feature-icon">🔍</div>
+          <div class="feature-text">
+            <h3>Advanced Search & Filters</h3>
+            <p>Search by title, genre, language, year, rating and more to find exactly what you want</p>
+          </div>
+        </div>
+        
+        <div class="feature-item">
+          <div class="feature-icon">🔥</div>
+          <div class="feature-text">
+            <h3>Trending Movies</h3>
+            <p>Stay updated with the latest and most popular movies from around the world</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Sign In Section -->
+    <div class="signin-section">
+      <h2>Sign In to Continue</h2>
+      <p>Create an account or sign in to start discovering amazing movies</p>
+      
+      <!-- Google Sign-In Button -->
+      {% get_providers as socialaccount_providers %}
+      {% if socialaccount_providers %}
+      <form method="post" action="{% provider_login_url 'google' %}">
+        {% csrf_token %}
+        <button type="submit" class="google-signin-btn">
+          <svg width="20" height="20" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
+            <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+            <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+            <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+            <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+          </svg>
+          <span>Continue with Google</span>
+        </button>
+      </form>
+      
+      <div class="signin-divider">
+        <span>or</span>
+      </div>
+      {% endif %}
+      
+      <div class="signin-form">
+        <div class="form-group">
+          <label for="username">Username</label>
+          <input id="username" type="text" class="form-input" placeholder="Enter your username" />
+        </div>
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input id="password" type="password" class="form-input" placeholder="Enter your password" />
+        </div>
+        <div id="formMessage" class="form-message"></div>
+        <button id="signInBtn" class="btn-primary">Sign In</button>
+        <button id="signUpBtn" class="btn-secondary">Create Account</button>
+      </div>
+    </div>
+  </div>
+  
+  <script>
+    // Make CSRF token available to JavaScript
+    window.CSRF_TOKEN = '{{ csrf_token }}';
+    
+    const usernameInput = document.getElementById('username');
+    const passwordInput = document.getElementById('password');
+    const signInBtn = document.getElementById('signInBtn');
+    const signUpBtn = document.getElementById('signUpBtn');
+    const formMessage = document.getElementById('formMessage');
+    
+    function showMessage(message, type) {
+      formMessage.textContent = message;
+      formMessage.className = 'form-message ' + type;
+      formMessage.style.display = 'block';
+    }
+    
+    function clearMessage() {
+      formMessage.style.display = 'none';
+      formMessage.className = 'form-message';
+    }
+    
+    async function handleSignIn() {
+      const username = usernameInput.value.trim();
+      const password = passwordInput.value.trim();
+      
+      if (!username || !password) {
+        showMessage('Please enter both username and password', 'error');
+        return;
+      }
+      
+      clearMessage();
+      signInBtn.textContent = 'Signing in...';
+      signInBtn.disabled = true;
+      
+      try {
+        const response = await fetch('/api/auth/signin/', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': window.CSRF_TOKEN
+          },
+          body: JSON.stringify({ username, password })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+          showMessage('Sign in successful! Redirecting...', 'success');
+          setTimeout(() => {
+            window.location.href = '/';
+          }, 1000);
+        } else {
+          showMessage(data.error || 'Invalid credentials', 'error');
+          signInBtn.textContent = 'Sign In';
+          signInBtn.disabled = false;
+        }
+      } catch (error) {
+        showMessage('An error occurred. Please try again.', 'error');
+        signInBtn.textContent = 'Sign In';
+        signInBtn.disabled = false;
+      }
+    }
+    
+    async function handleSignUp() {
+      const username = usernameInput.value.trim();
+      const password = passwordInput.value.trim();
+      
+      if (!username || !password) {
+        showMessage('Please enter both username and password', 'error');
+        return;
+      }
+      
+      if (password.length < 6) {
+        showMessage('Password must be at least 6 characters long', 'error');
+        return;
+      }
+      
+      clearMessage();
+      signUpBtn.textContent = 'Creating account...';
+      signUpBtn.disabled = true;
+      
+      try {
+        const response = await fetch('/api/auth/signup/', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': window.CSRF_TOKEN
+          },
+          body: JSON.stringify({ username, password })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+          showMessage('Account created successfully! Redirecting...', 'success');
+          setTimeout(() => {
+            window.location.href = '/';
+          }, 1000);
+        } else {
+          showMessage(data.error || 'Failed to create account', 'error');
+          signUpBtn.textContent = 'Create Account';
+          signUpBtn.disabled = false;
+        }
+      } catch (error) {
+        showMessage('An error occurred. Please try again.', 'error');
+        signUpBtn.textContent = 'Create Account';
+        signUpBtn.disabled = false;
+      }
+    }
+    
+    signInBtn.addEventListener('click', handleSignIn);
+    signUpBtn.addEventListener('click', handleSignUp);
+    
+    passwordInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        handleSignIn();
+      }
+    });
+  </script>
+</body>
+</html>

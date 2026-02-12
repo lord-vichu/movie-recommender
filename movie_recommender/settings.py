@@ -147,9 +147,11 @@ AUTHENTICATION_BACKENDS = [
 ACCOUNT_LOGIN_METHODS = {'username', 'email'}  # Allow login with username or email
 ACCOUNT_SIGNUP_FIELDS = ['email*', 'username*', 'password1*', 'password2*']  # Required signup fields
 ACCOUNT_EMAIL_VERIFICATION = 'optional'  # Can be 'mandatory', 'optional', or 'none'
+# Authentication settings
 ACCOUNT_AUTHENTICATED_LOGIN_REDIRECTS = True  # Skip intermediate pages for authenticated users
 LOGIN_REDIRECT_URL = '/'
-LOGOUT_REDIRECT_URL = '/'
+LOGIN_URL = '/landing/'  # Redirect to landing page when login is required
+LOGOUT_REDIRECT_URL = '/landing/'  # Redirect to landing page after logout
 
 # Social Account Settings - Skip intermediate pages after Google login
 SOCIALACCOUNT_AUTO_SIGNUP = True  # Automatically create accounts from social logins
