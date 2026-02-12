@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <!-- Film reel background -->
+  <circle cx="100" cy="100" r="90" fill="url(#gradient)" stroke="#667eea" stroke-width="4"/>
+  
+  <!-- Gradient definition -->
+  <defs>
+    <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#764ba2;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#f093fb;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Film strip holes -->
+  <circle cx="100" cy="40" r="8" fill="#1a1a2e"/>
+  <circle cx="100" cy="160" r="8" fill="#1a1a2e"/>
+  <circle cx="40" cy="100" r="8" fill="#1a1a2e"/>
+  <circle cx="160" cy="100" r="8" fill="#1a1a2e"/>
+  
+  <circle cx="60" cy="60" r="6" fill="#1a1a2e"/>
+  <circle cx="140" cy="60" r="6" fill="#1a1a2e"/>
+  <circle cx="60" cy="140" r="6" fill="#1a1a2e"/>
+  <circle cx="140" cy="140" r="6" fill="#1a1a2e"/>
+  
+  <!-- Camera/Film icon in center -->
+  <rect x="70" y="80" width="60" height="40" rx="5" fill="white" opacity="0.95"/>
+  <circle cx="100" cy="100" r="15" fill="#667eea"/>
+  <circle cx="100" cy="100" r="8" fill="white"/>
+  
+  <!-- Play button -->
+  <polygon points="95,95 95,105 108,100" fill="#764ba2"/>
+  
+  <!-- Film strip lines -->
+  <rect x="65" y="85" width="2" height="30" fill="#667eea" opacity="0.5"/>
+  <rect x="73" y="85" width="2" height="30" fill="#667eea" opacity="0.5"/>
+  <rect x="125" y="85" width="2" height="30" fill="#667eea" opacity="0.5"/>
+  <rect x="133" y="85" width="2" height="30" fill="#667eea" opacity="0.5"/>
+</svg>

@@ -4,6 +4,9 @@ from . import views
 app_name = 'movies'
 
 urlpatterns = [
+    # Landing page
+    path('landing/', views.landing, name='landing'),
+    
     # Main page
     path('', views.index, name='index'),
     

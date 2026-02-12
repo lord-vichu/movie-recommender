@@ -346,8 +346,16 @@ def search_wikipedia_movies(query, count=10, language_code='en'):
         return []
 
 
+def landing(request):
+    """Landing page view - shown to non-authenticated users"""
+    if request.user.is_authenticated:
+        return redirect('movies:index')
+    return render(request, 'movies/landing.html')
+
+
+@login_required
 def index(request):
-    """Main page view"""
+    """Main page view - requires authentication"""
     return render(request, 'movies/index.html')
 
 

@@ -1185,6 +1185,23 @@ button.ghost{
   max-width:95vw;
   overflow:visible;
 }
+.logo-loader{
+  width:80px;
+  height:80px;
+  margin:0 auto 16px;
+  animation:logoSpin 2s ease-in-out infinite;
+}
+.logo-loader img{
+  width:100%;
+  height:100%;
+  filter:drop-shadow(0 4px 12px rgba(102, 126, 234, 0.4));
+}
+@keyframes logoSpin{
+  0%, 100%{transform:rotate(0deg) scale(1)}
+  25%{transform:rotate(-10deg) scale(1.05)}
+  50%{transform:rotate(0deg) scale(1.1)}
+  75%{transform:rotate(10deg) scale(1.05)}
+}
 @keyframes textShine{
   0%, 100%{background-position:0% 50%}
   50%{background-position:100% 50%}
