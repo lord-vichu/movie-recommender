@@ -147,8 +147,14 @@ AUTHENTICATION_BACKENDS = [
 ACCOUNT_LOGIN_METHODS = {'username', 'email'}  # Allow login with username or email
 ACCOUNT_SIGNUP_FIELDS = ['email*', 'username*', 'password1*', 'password2*']  # Required signup fields
 ACCOUNT_EMAIL_VERIFICATION = 'optional'  # Can be 'mandatory', 'optional', or 'none'
+ACCOUNT_AUTHENTICATED_LOGIN_REDIRECTS = True  # Skip intermediate pages for authenticated users
 LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/'
+
+# Social Account Settings - Skip intermediate pages after Google login
+SOCIALACCOUNT_AUTO_SIGNUP = True  # Automatically create accounts from social logins
+SOCIALACCOUNT_EMAIL_AUTHENTICATION = True  # Use email for authentication with social accounts
+SOCIALACCOUNT_EMAIL_AUTHENTICATION_AUTO_CONNECT = True  # Auto-connect social accounts with same email
 
 # Google OAuth Settings
 # Get these from: https://console.developers.google.com/

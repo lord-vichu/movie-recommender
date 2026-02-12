@@ -104,7 +104,9 @@ This guide will help you set up Google OAuth authentication for your Movie Recom
 3. Click **Sign in**
 4. Click **Sign in with Google**
 5. You should be redirected to Google's login page
-6. After signing in, you'll be redirected back to your app!
+6. After signing in, you'll be redirected directly back to your app homepage!
+
+**Note:** The app is configured to skip intermediate pages and redirect users directly to the homepage after successful Google authentication. This provides a seamless login experience.
 
 ## Troubleshooting
 
