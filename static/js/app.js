@@ -396,8 +396,11 @@ async function loadTrending() {
                 // Create a placeholder div with movie title
                 const placeholder = document.createElement('div');
                 placeholder.className = 'poster-placeholder';
-                placeholder.style.cssText = 'width:100%;height:200px;background:var(--card-bg);display:flex;align-items:center;justify-content:center;text-align:center;padding:20px;border-radius:8px;';
-                placeholder.innerHTML = `<div style="color:var(--text);">${movie.title}</div>`;
+                placeholder.style.cssText = 'width:100%;height:200px;background:var(--card);display:flex;align-items:center;justify-content:center;text-align:center;padding:20px;border-radius:8px;';
+                const placeholderTitle = document.createElement('div');
+                placeholderTitle.style.color = 'var(--text)';
+                placeholderTitle.textContent = movie.title;
+                placeholder.appendChild(placeholderTitle);
                 card.appendChild(placeholder);
             }
             
