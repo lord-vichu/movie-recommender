@@ -879,6 +879,16 @@ def discover_movies(request):
 @require_http_methods(["GET"])
 def get_trending(request):
     """Get trending movies from TMDb and popular movies from Wikipedia"""
+    
+    def normalize_title(title):
+        """Normalize title for comparison by removing extra whitespace and converting to lowercase"""
+        if not title:
+            return ''
+        # Convert to lowercase, normalize whitespace (replace multiple spaces with single space)
+        import re
+        normalized = re.sub(r'\s+', ' ', title.lower().strip())
+        return normalized
+    
     try:
         movies = []
         seen_titles = set()  # Track unique movie titles to prevent duplicates
@@ -897,7 +907,7 @@ def get_trending(request):
                 
                 for movie in data.get('results', [])[:15]:
                     movie_id = movie.get('id')
-                    movie_title = (movie.get('title') or movie.get('original_title', '')).lower()
+                    movie_title = normalize_title(movie.get('title') or movie.get('original_title', ''))
                     
                     # Skip if we've already seen this movie (by ID or title)
                     if movie_id in seen_ids or movie_title in seen_titles:
@@ -933,7 +943,7 @@ def get_trending(request):
                     if len(movies) >= 20:
                         break
                     
-                    wiki_title = wiki_movie.get('title', '').lower()
+                    wiki_title = normalize_title(wiki_movie.get('title', ''))
                     wiki_id = wiki_movie.get('id')
                     
                     # Skip if we've already seen this movie
