@@ -155,7 +155,6 @@ LOGOUT_REDIRECT_URL = '/'
 SOCIALACCOUNT_AUTO_SIGNUP = True  # Automatically create accounts from social logins
 SOCIALACCOUNT_EMAIL_AUTHENTICATION = True  # Use email for authentication with social accounts
 SOCIALACCOUNT_EMAIL_AUTHENTICATION_AUTO_CONNECT = True  # Auto-connect social accounts with same email
-SOCIALACCOUNT_LOGIN_ON_GET = True  # Allow login via GET request (required for direct redirects)
 
 # Google OAuth Settings
 # Get these from: https://console.developers.google.com/

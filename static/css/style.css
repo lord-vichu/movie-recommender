@@ -810,6 +810,10 @@ body[data-theme="light"] .main-nav{
   margin-bottom: 1.5rem;
 }
 
+.signin-google form {
+  width: 100%;
+}
+
 .google-signin-btn{
   display: flex;
   align-items: center;
@@ -824,6 +828,9 @@ body[data-theme="light"] .main-nav{
   font-weight: 600;
   transition: all 0.3s ease;
   border: 1px solid #ddd;
+  cursor: pointer;
+  font-size: inherit;
+  font-family: inherit;
 }
 
 .google-signin-btn:hover{
