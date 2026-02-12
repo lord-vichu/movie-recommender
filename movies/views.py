@@ -59,7 +59,7 @@ def get_mock_movies(count=20, genre=None, language=None, search_query=None):
         {'id': 27, 'title': 'La La Land', 'year': 2016, 'genres': ['Comedy', 'Drama', 'Romance'], 'lang': 'en', 'rating': 8.0, 'desc': 'While navigating their careers in Los Angeles, a pianist and an actress fall in love while attempting to reconcile their aspirations.'},
         {'id': 28, 'title': 'John Wick', 'year': 2014, 'genres': ['Action', 'Crime', 'Thriller'], 'lang': 'en', 'rating': 7.4, 'desc': 'An ex-hit-man comes out of retirement to track down the gangsters that killed his dog and took everything from him.'},
         {'id': 29, 'title': 'Mad Max: Fury Road', 'year': 2015, 'genres': ['Action', 'Sci-Fi'], 'lang': 'en', 'rating': 8.1, 'desc': 'In a post-apocalyptic wasteland, a woman rebels against a tyrannical ruler in search for her homeland.'},
-        {'id': 30, 'title': 'Toy Story', 'year': 1995, 'genres': ['Animation', 'Adventure', 'Comedy'], 'lang': 'en', 'rating': 8.3, 'desc': 'A cowboy doll is profoundly threatened when a new spaceman figure supplants him as top toy in a boy room.'},
+        {'id': 30, 'title': 'Toy Story', 'year': 1995, 'genres': ['Animation', 'Adventure', 'Comedy'], 'lang': 'en', 'rating': 8.3, 'desc': 'A cowboy doll is profoundly threatened when a new spaceman figure supplants him as top toy in a boy\'s room.'},
     ]
     
     # Filter by genre if specified
