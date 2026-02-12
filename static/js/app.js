@@ -35,6 +35,7 @@ const sortEl = document.getElementById('sortBy');
 const recommendBtn = document.getElementById('recommend');
 const surpriseBtn = document.getElementById('surprise');
 const searchBtn = document.getElementById('searchBtn');
+const voiceSearchBtn = document.getElementById('voiceSearchBtn');
 const favoritesBtn = document.getElementById('favoritesBtn');
 const watchLaterBtn = document.getElementById('watchLaterBtn');
 const libraryBtn = document.getElementById('libraryBtn');
@@ -842,6 +843,83 @@ if (searchBtn) {
         console.log('Search button clicked');
         discoverMovies();
     });
+}
+
+// Voice Search functionality
+if (voiceSearchBtn) {
+    // Check if browser supports Web Speech API
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    
+    if (SpeechRecognition) {
+        const recognition = new SpeechRecognition();
+        recognition.lang = 'en-US';
+        recognition.interimResults = false;
+        recognition.maxAlternatives = 1;
+        
+        let isRecording = false;
+        
+        voiceSearchBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            
+            if (isRecording) {
+                recognition.stop();
+                return;
+            }
+            
+            try {
+                recognition.start();
+                isRecording = true;
+                voiceSearchBtn.classList.add('recording');
+                console.log('Voice recognition started');
+                showError('🎤 Listening... Speak now!');
+            } catch (error) {
+                console.error('Speech recognition error:', error);
+                showError('Failed to start voice recognition. Please try again.');
+            }
+        });
+        
+        recognition.addEventListener('result', (e) => {
+            const transcript = e.results[0][0].transcript;
+            console.log('Voice input received:', transcript);
+            searchEl.value = transcript;
+            clearError();
+            // Automatically trigger search after voice input
+            discoverMovies();
+        });
+        
+        recognition.addEventListener('end', () => {
+            isRecording = false;
+            voiceSearchBtn.classList.remove('recording');
+            console.log('Voice recognition ended');
+        });
+        
+        recognition.addEventListener('error', (e) => {
+            console.error('Speech recognition error:', e.error);
+            isRecording = false;
+            voiceSearchBtn.classList.remove('recording');
+            
+            let errorMessage = 'Voice search error. ';
+            switch(e.error) {
+                case 'no-speech':
+                    errorMessage += 'No speech detected. Please try again.';
+                    break;
+                case 'audio-capture':
+                    errorMessage += 'Microphone not found. Please check your device.';
+                    break;
+                case 'not-allowed':
+                    errorMessage += 'Microphone access denied. Please enable it in your browser settings.';
+                    break;
+                default:
+                    errorMessage += 'Please try again.';
+            }
+            showError(errorMessage);
+        });
+        
+    } else {
+        // Browser doesn't support Web Speech API
+        voiceSearchBtn.style.display = 'none';
+        console.warn('Web Speech API not supported in this browser');
+    }
 }
 
 surpriseBtn?.addEventListener('click', () => {
