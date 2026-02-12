@@ -383,17 +383,28 @@ async function loadTrending() {
         const createCard = (movie) => {
             const card = document.createElement('div');
             card.className = 'trending-card';
+            card.style.cursor = 'pointer';
             
-            const img = document.createElement('img');
-            img.src = movie.poster || '';
-            img.alt = movie.title;
-            img.loading = 'lazy';
+            // Handle poster - use placeholder if null
+            if (movie.poster) {
+                const img = document.createElement('img');
+                img.src = movie.poster;
+                img.alt = movie.title;
+                img.loading = 'lazy';
+                card.appendChild(img);
+            } else {
+                // Create a placeholder div with movie title
+                const placeholder = document.createElement('div');
+                placeholder.className = 'poster-placeholder';
+                placeholder.style.cssText = 'width:100%;height:200px;background:var(--card-bg);display:flex;align-items:center;justify-content:center;text-align:center;padding:20px;border-radius:8px;';
+                placeholder.innerHTML = `<div style="color:var(--text);">${movie.title}</div>`;
+                card.appendChild(placeholder);
+            }
             
             const title = document.createElement('div');
             title.className = 't-title';
             title.textContent = movie.title;
             
-            card.appendChild(img);
             card.appendChild(title);
             
             card.addEventListener('click', async () => {
@@ -929,7 +940,7 @@ loadTrending();
 const showAdvancedBtn = document.getElementById('showAdvancedBtn');
 const closeAdvancedBtn = document.getElementById('closeAdvancedBtn');
 const advancedFilters = document.getElementById('advancedFilters');
-const surpriseBtn = document.getElementById('surpriseBtn');
+const surpriseMeBtn = document.getElementById('surpriseBtn');
 const resetFiltersBtn = document.getElementById('resetFilters');
 const filterChips = document.querySelectorAll('.filter-chip[data-genre]');
 
@@ -957,7 +968,7 @@ filterChips.forEach(chip => {
 });
 
 // Surprise Me Button (redirects to hidden surprise button)
-surpriseBtn?.addEventListener('click', () => {
+surpriseMeBtn?.addEventListener('click', () => {
     const hiddenSurprise = document.getElementById('surprise');
     if (hiddenSurprise) {
         hiddenSurprise.click();
