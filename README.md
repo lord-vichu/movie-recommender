@@ -6,6 +6,7 @@ A Django-based movie recommendation web application using The Movie Database (TM
 
 ## Features
 
+- **Text and Voice Search**: Search for movies by typing or using voice input (Web Speech API)
 - Movie discovery with genre, language, and timeframe filters
 - User authentication system
 - Favorites, Watch Later, and Library lists
@@ -47,6 +48,19 @@ A Django-based movie recommendation web application using The Movie Database (TM
 
 6. **Access the application:**
    Open your browser and go to `http://127.0.0.1:8000/`
+
+## Using the Search Feature
+
+### Text Search
+Simply type a movie title in the search box and click the "Search" button or press Enter.
+
+### Voice Search
+1. Click the microphone button (🎤) next to the search box
+2. Allow microphone access if prompted by your browser
+3. Speak the movie title clearly
+4. The search will automatically execute once voice input is captured
+
+**Note**: Voice search requires a browser that supports the Web Speech API (Chrome, Edge, Safari). The microphone button will be hidden in unsupported browsers.
 
 ## Configuration
 
