@@ -874,6 +874,110 @@ if (searchEl) {
     });
 }
 
+// Voice Search Functionality
+const voiceSearchBtn = document.getElementById('voiceSearchBtn');
+const voiceIcon = document.getElementById('voiceIcon');
+
+if (voiceSearchBtn && voiceIcon) {
+    // Check if browser supports Speech Recognition
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    
+    if (SpeechRecognition) {
+        const recognition = new SpeechRecognition();
+        recognition.continuous = false;
+        recognition.interimResults = false;
+        recognition.lang = 'en-US';
+        
+        let isListening = false;
+        
+        voiceSearchBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            
+            if (isListening) {
+                // Stop listening
+                recognition.stop();
+                isListening = false;
+                voiceSearchBtn.classList.remove('listening');
+                voiceIcon.textContent = '🎤';
+                voiceSearchBtn.title = 'Voice search';
+            } else {
+                // Start listening
+                try {
+                    recognition.start();
+                    isListening = true;
+                    voiceSearchBtn.classList.add('listening');
+                    voiceIcon.textContent = '🔴';
+                    voiceSearchBtn.title = 'Listening... Click to stop';
+                } catch (error) {
+                    console.error('Speech recognition error:', error);
+                    showError('Failed to start voice recognition. Please try again.');
+                }
+            }
+        });
+        
+        recognition.onresult = (event) => {
+            const transcript = event.results[0][0].transcript;
+            console.log('Voice search transcript:', transcript);
+            
+            if (searchEl) {
+                searchEl.value = transcript;
+                // Trigger search automatically
+                discoverMovies();
+            }
+            
+            // Reset button state
+            isListening = false;
+            voiceSearchBtn.classList.remove('listening');
+            voiceIcon.textContent = '🎤';
+            voiceSearchBtn.title = 'Voice search';
+        };
+        
+        recognition.onerror = (event) => {
+            console.error('Speech recognition error:', event.error);
+            
+            let errorMessage = 'Voice recognition error. ';
+            switch(event.error) {
+                case 'no-speech':
+                    errorMessage += 'No speech was detected. Please try again.';
+                    break;
+                case 'audio-capture':
+                    errorMessage += 'No microphone was found.';
+                    break;
+                case 'not-allowed':
+                    errorMessage += 'Microphone access was denied. Please enable it in your browser settings.';
+                    break;
+                case 'network':
+                    errorMessage += 'Network error occurred.';
+                    break;
+                default:
+                    errorMessage += 'Please try again.';
+            }
+            
+            showError(errorMessage);
+            
+            // Reset button state
+            isListening = false;
+            voiceSearchBtn.classList.remove('listening');
+            voiceIcon.textContent = '🎤';
+            voiceSearchBtn.title = 'Voice search';
+        };
+        
+        recognition.onend = () => {
+            // Reset button state when recognition ends
+            isListening = false;
+            voiceSearchBtn.classList.remove('listening');
+            voiceIcon.textContent = '🎤';
+            voiceSearchBtn.title = 'Voice search';
+        };
+    } else {
+        // Browser doesn't support speech recognition
+        voiceSearchBtn.disabled = true;
+        voiceSearchBtn.title = 'Voice search is not supported in your browser';
+        voiceIcon.textContent = '🎤';
+        console.warn('Speech Recognition API is not supported in this browser');
+    }
+}
+
 trendingBtn?.addEventListener('click', async () => {
     try {
         const result = await apiCall('/api/movies/trending/');
