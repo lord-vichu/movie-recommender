@@ -419,12 +419,7 @@ async function loadTrending() {
             return card;
         };
         
-        // Add movies twice for infinite loop effect
-        result.trending.forEach(movie => {
-            trendingList.appendChild(createCard(movie));
-        });
-        
-        // Duplicate for seamless loop
+        // Add movies to the trending list
         result.trending.forEach(movie => {
             trendingList.appendChild(createCard(movie));
         });
