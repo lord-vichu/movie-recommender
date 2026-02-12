@@ -889,9 +889,15 @@ if (voiceSearchBtn && voiceIcon) {
         recognition.lang = 'en-US';
         
         let isListening = false;
+        let isStarting = false;
         
         voiceSearchBtn.addEventListener('click', (e) => {
             e.preventDefault();
+            
+            // Prevent clicking while starting
+            if (isStarting) {
+                return;
+            }
             
             if (isListening) {
                 // Stop listening
@@ -901,7 +907,8 @@ if (voiceSearchBtn && voiceIcon) {
                 voiceIcon.textContent = '🎤';
                 voiceSearchBtn.title = 'Voice search';
             } else {
-                // Start listening
+                // Start listening with race condition protection
+                isStarting = true;
                 try {
                     recognition.start();
                     isListening = true;
@@ -910,7 +917,21 @@ if (voiceSearchBtn && voiceIcon) {
                     voiceSearchBtn.title = 'Listening... Click to stop';
                 } catch (error) {
                     console.error('Speech recognition error:', error);
-                    showError('Failed to start voice recognition. Please try again.');
+                    // Handle "already started" error gracefully
+                    if (error.message && error.message.includes('already started')) {
+                        console.log('Recognition already in progress');
+                    } else {
+                        showError('Failed to start voice recognition. Please try again.');
+                    }
+                    isListening = false;
+                    voiceSearchBtn.classList.remove('listening');
+                    voiceIcon.textContent = '🎤';
+                    voiceSearchBtn.title = 'Voice search';
+                } finally {
+                    // Reset starting flag after a short delay
+                    setTimeout(() => {
+                        isStarting = false;
+                    }, 100);
                 }
             }
         });

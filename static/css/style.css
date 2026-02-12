@@ -383,7 +383,7 @@ body[data-theme="light"] .main-nav{
 }
 
 /* Voice Search Button */
-.btn-voice{
+.btn-voice {
   background: transparent;
   border: none;
   color: var(--cinema-gold);
@@ -398,16 +398,16 @@ body[data-theme="light"] .main-nav{
   justify-content: center;
 }
 
-.btn-voice:hover{
+.btn-voice:hover {
   background: rgba(212, 175, 55, 0.1);
   transform: scale(1.1);
 }
 
-.btn-voice:active{
+.btn-voice:active {
   transform: scale(0.95);
 }
 
-.btn-voice.listening{
+.btn-voice.listening {
   color: var(--cinema-red);
   animation: pulse 1.5s ease-in-out infinite;
 }
@@ -423,7 +423,7 @@ body[data-theme="light"] .main-nav{
   }
 }
 
-.btn-voice:disabled{
+.btn-voice:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
