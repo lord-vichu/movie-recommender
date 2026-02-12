@@ -300,11 +300,6 @@ def search_wikipedia_movies(query, count=10):
     except Exception as e:
         print(f"Wikipedia search error: {e}")
         return []
-        
-        return movies[:count]
-    except Exception as e:
-        print(f"Wikipedia search error: {e}")
-        return []
 
 
 def index(request):
