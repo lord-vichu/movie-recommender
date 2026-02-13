@@ -213,6 +213,13 @@ function renderResults(movies) {
     const resultsSection = document.getElementById('resultsSection');
     if (resultsSection) {
         resultsSection.style.display = 'block';
+        // Trigger reflow to restart animations
+        void resultsSection.offsetWidth;
+        resultsSection.style.animation = 'none';
+        setTimeout(() => {
+            resultsSection.style.animation = 'sectionFadeIn 0.6s ease forwards';
+        }, 10);
+        
         const resultsCount = document.getElementById('resultsCount');
         if (resultsCount) {
             resultsCount.textContent = `${movies.length} ${movies.length === 1 ? 'movie' : 'movies'} found`;
@@ -220,6 +227,9 @@ function renderResults(movies) {
     }
     
     resultsEl.innerHTML = '';
+    
+    // Force reflow to enable staggered animations
+    void resultsEl.offsetWidth;
     
     movies.forEach(movie => {
         const card = document.createElement('div');
