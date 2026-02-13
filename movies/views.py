@@ -5,6 +5,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
+from django.views.decorators.csrf import csrf_exempt
 from django.conf import settings
 from .models import Favorite, WatchLater, Library, UserRating
 import json
@@ -360,6 +361,7 @@ def index(request):
 
 
 @require_http_methods(["POST"])
+@csrf_exempt
 def user_signup(request):
     """User registration"""
     try:
@@ -383,6 +385,9 @@ def user_signup(request):
         )
         
         # Log the user in immediately after signup
+        from django.contrib.auth import load_backend
+        backend = load_backend('django.contrib.auth.backends.ModelBackend')
+        user.backend = f"{backend.__module__}.{backend.__class__.__name__}"
         login(request, user)
         
         return JsonResponse({
@@ -390,12 +395,17 @@ def user_signup(request):
             'username': username,
             'message': 'Account created successfully'
         })
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'Invalid request data'}, status=400)
     except Exception as e:
         print(f"Signup error: {str(e)}")
-        return JsonResponse({'error': 'Failed to create account. Please try again.'}, status=500)
+        import traceback
+        traceback.print_exc()
+        return JsonResponse({'error': f'Failed to create account: {str(e)}'}, status=500)
 
 
 @require_http_methods(["POST"])
+@csrf_exempt
 def user_signin(request):
     """User login"""
     try:
@@ -417,6 +427,7 @@ def user_signin(request):
 
 
 @require_http_methods(["POST"])
+@csrf_exempt
 def user_signout(request):
     """User logout"""
     logout(request)
