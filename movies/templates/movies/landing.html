@@ -457,6 +457,7 @@
             'Content-Type': 'application/json',
             'X-CSRFToken': window.CSRF_TOKEN
           },
+          credentials: 'same-origin',
           body: JSON.stringify({ username, password })
         });
         
@@ -473,6 +474,7 @@
           signInBtn.disabled = false;
         }
       } catch (error) {
+        console.error('Signin error:', error);
         showMessage('An error occurred. Please try again.', 'error');
         signInBtn.textContent = 'Sign In';
         signInBtn.disabled = false;
@@ -488,8 +490,8 @@
         return;
       }
       
-      if (password.length < 8) {
-        showMessage('Password must be at least 8 characters long', 'error');
+      if (password.length < 4) {
+        showMessage('Password must be at least 4 characters long', 'error');
         return;
       }
       
@@ -504,6 +506,7 @@
             'Content-Type': 'application/json',
             'X-CSRFToken': window.CSRF_TOKEN
           },
+          credentials: 'same-origin',
           body: JSON.stringify({ username, password })
         });
         
@@ -520,6 +523,7 @@
           signUpBtn.disabled = false;
         }
       } catch (error) {
+        console.error('Signup error:', error);
         showMessage('An error occurred. Please try again.', 'error');
         signUpBtn.textContent = 'Create Account';
         signUpBtn.disabled = false;

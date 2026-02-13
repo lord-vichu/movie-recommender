@@ -370,14 +370,29 @@ def user_signup(request):
         if not username or not password:
             return JsonResponse({'error': 'Username and password required'}, status=400)
         
-        if User.objects.filter(username=username).exists():
-            return JsonResponse({'error': 'User already exists'}, status=400)
+        if len(password) < 4:
+            return JsonResponse({'error': 'Password must be at least 4 characters'}, status=400)
         
-        user = User.objects.create_user(username=username, password=password)
+        if User.objects.filter(username=username).exists():
+            return JsonResponse({'error': 'Username already taken'}, status=400)
+        
+        # Create user without requiring additional permissions
+        user = User.objects.create_user(
+            username=username,
+            password=password
+        )
+        
+        # Log the user in immediately after signup
         login(request, user)
-        return JsonResponse({'success': True, 'username': username})
+        
+        return JsonResponse({
+            'success': True,
+            'username': username,
+            'message': 'Account created successfully'
+        })
     except Exception as e:
-        return JsonResponse({'error': str(e)}, status=500)
+        print(f"Signup error: {str(e)}")
+        return JsonResponse({'error': 'Failed to create account. Please try again.'}, status=500)
 
 
 @require_http_methods(["POST"])

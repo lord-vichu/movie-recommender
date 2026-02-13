@@ -97,14 +97,18 @@ function updateUserUI() {
     const btn = document.getElementById('signInBtn');
     const label = document.getElementById('userLabel');
     
-    if (window.IS_AUTHENTICATED && btn) {
-        btn.textContent = 'Sign out';
+    if (window.IS_AUTHENTICATED && btn && label) {
+        // Show username with user icon
+        label.innerHTML = `<span style="font-size: 16px;">👤</span> ${window.USERNAME || 'User'}`;
         btn.onclick = (e) => { e.preventDefault(); signOut(); };
-        if (label) label.textContent = window.USERNAME || '';
-    } else if (btn) {
-        btn.textContent = 'Sign in';
+        btn.title = 'Click to sign out';
+        btn.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
+    } else if (btn && label) {
+        // Show sign in option
+        label.innerHTML = 'Sign In';
         btn.onclick = (e) => { e.preventDefault(); openSignInModal(); };
-        if (label) label.textContent = '';
+        btn.title = 'Sign in to save favorites';
+        btn.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
     }
 }
 
@@ -150,14 +154,17 @@ async function doSignIn() {
             showError(result.error);
         } else {
             window.IS_AUTHENTICATED = true;
-            window.USERNAME = username;
+            window.USERNAME = result.username || username;
             updateUserUI();
             closeSignInModal();
-            showError(`Signed in as ${username}`);
-            window.location.reload();
+            showError(`Welcome back, ${username}!`);
+            setTimeout(() => {
+                window.location.reload();
+            }, 500);
         }
     } catch (err) {
-        showError('Sign in failed');
+        console.error('Sign in error:', err);
+        showError('Sign in failed. Please check your credentials.');
     }
 }
 
@@ -171,20 +178,28 @@ async function doSignUp() {
             return;
         }
         
+        if (password.length < 4) {
+            showError('Password must be at least 4 characters');
+            return;
+        }
+        
         const result = await apiCall('/api/auth/signup/', 'POST', { username, password });
         
         if (result.error) {
             showError(result.error);
         } else {
             window.IS_AUTHENTICATED = true;
-            window.USERNAME = username;
+            window.USERNAME = result.username || username;
             updateUserUI();
             closeSignInModal();
-            showError(`Account created for ${username}`);
-            window.location.reload();
+            showError(`Account created! Welcome ${username}!`);
+            setTimeout(() => {
+                window.location.reload();
+            }, 500);
         }
     } catch (err) {
-        showError('Sign up failed');
+        console.error('Sign up error:', err);
+        showError('Sign up failed. Please try again.');
     }
 }
 
