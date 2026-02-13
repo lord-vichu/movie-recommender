@@ -849,6 +849,19 @@ body[data-theme="light"] .main-nav{
   border-color: var(--primary);
 }
 
+.btn-action.active{
+  background: var(--accent);
+  color: white;
+  border-color: var(--accent);
+  box-shadow: 0 0 20px rgba(255, 107, 107, 0.3);
+}
+
+.btn-action.active:hover{
+  background: #ff5252;
+  border-color: #ff5252;
+  box-shadow: 0 0 25px rgba(255, 107, 107, 0.5);
+}
+
 /* Sign In Modal */
 .signin-modal{
   max-width: 450px;

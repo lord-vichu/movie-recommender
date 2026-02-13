@@ -664,11 +664,261 @@ async function openQuickView(movie) {
     
     // Setup close button
     document.getElementById('qClose').onclick = closeQuickView;
+    
+    // Setup action buttons (favorite, watch later, library)
+    const favBtn = document.getElementById('qFav');
+    const watchBtn = document.getElementById('qWatch');
+    const libBtn = document.getElementById('qLibrary');
+    
+    // Remove old event listeners by cloning and replacing
+    if (favBtn) {
+        const newFavBtn = favBtn.cloneNode(true);
+        favBtn.parentNode.replaceChild(newFavBtn, favBtn);
+        newFavBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            toggleFavorite(movie);
+        });
+    }
+    
+    if (watchBtn) {
+        const newWatchBtn = watchBtn.cloneNode(true);
+        watchBtn.parentNode.replaceChild(newWatchBtn, watchBtn);
+        newWatchBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            toggleWatchLater(movie);
+        });
+    }
+    
+    if (libBtn) {
+        const newLibBtn = libBtn.cloneNode(true);
+        libBtn.parentNode.replaceChild(newLibBtn, libBtn);
+        newLibBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            toggleLibrary(movie);
+        });
+    }
+    
+    // Update button states based on user's lists
+    if (movie.id) {
+        updateButtonStates(movie.id);
+    }
 }
 
 function closeQuickView() {
     const overlay = document.getElementById('quickViewOverlay');
     if (overlay) overlay.style.display = 'none';
+}
+
+// Helper functions for favorites, watch later, and library
+async function toggleFavorite(movie) {
+    if (!window.IS_AUTHENTICATED) {
+        openSignInModal();
+        showError('Please sign in to add favorites');
+        return;
+    }
+    
+    try {
+        const btn = document.getElementById('qFav');
+        const icon = btn?.querySelector('.btn-icon');
+        
+        // Check if already favorited by looking at button state
+        const isFavorited = btn?.classList.contains('active');
+        
+        if (isFavorited) {
+            // Remove from favorites
+            const result = await apiCall('/api/favorites/remove/', 'POST', {
+                movie_id: movie.id
+            });
+            
+            if (result.success) {
+                if (btn) btn.classList.remove('active');
+                if (icon) icon.textContent = '☆';
+                showError('Removed from favorites');
+            } else {
+                showError('Failed to remove from favorites');
+            }
+        } else {
+            // Add to favorites
+            const result = await apiCall('/api/favorites/add/', 'POST', {
+                movie_id: movie.id,
+                movie_data: {
+                    id: movie.id,
+                    title: movie.title,
+                    year: movie.year,
+                    poster: movie.poster,
+                    rating: movie.rating,
+                    desc: movie.desc,
+                    lang: movie.lang
+                }
+            });
+            
+            if (result.success) {
+                if (btn) btn.classList.add('active');
+                if (icon) icon.textContent = '★';
+                showError('Added to favorites');
+            } else {
+                showError('Failed to add to favorites');
+            }
+        }
+    } catch (err) {
+        console.error('toggleFavorite error:', err);
+        showError('Failed to update favorites');
+    }
+}
+
+async function toggleWatchLater(movie) {
+    if (!window.IS_AUTHENTICATED) {
+        openSignInModal();
+        showError('Please sign in to add to watch later');
+        return;
+    }
+    
+    try {
+        const btn = document.getElementById('qWatch');
+        const isInWatchLater = btn?.classList.contains('active');
+        
+        if (isInWatchLater) {
+            // Remove from watch later
+            const result = await apiCall('/api/watch-later/remove/', 'POST', {
+                movie_id: movie.id
+            });
+            
+            if (result.success) {
+                if (btn) btn.classList.remove('active');
+                showError('Removed from watch later');
+            } else {
+                showError('Failed to remove from watch later');
+            }
+        } else {
+            // Add to watch later
+            const result = await apiCall('/api/watch-later/add/', 'POST', {
+                movie_id: movie.id,
+                movie_data: {
+                    id: movie.id,
+                    title: movie.title,
+                    year: movie.year,
+                    poster: movie.poster,
+                    rating: movie.rating,
+                    desc: movie.desc,
+                    lang: movie.lang
+                }
+            });
+            
+            if (result.success) {
+                if (btn) btn.classList.add('active');
+                showError('Added to watch later');
+            } else {
+                showError('Failed to add to watch later');
+            }
+        }
+    } catch (err) {
+        console.error('toggleWatchLater error:', err);
+        showError('Failed to update watch later list');
+    }
+}
+
+async function toggleLibrary(movie) {
+    if (!window.IS_AUTHENTICATED) {
+        openSignInModal();
+        showError('Please sign in to add to library');
+        return;
+    }
+    
+    try {
+        const btn = document.getElementById('qLibrary');
+        const isInLibrary = btn?.classList.contains('active');
+        
+        if (isInLibrary) {
+            // Remove from library
+            const result = await apiCall('/api/library/remove/', 'POST', {
+                movie_id: movie.id
+            });
+            
+            if (result.success) {
+                if (btn) btn.classList.remove('active');
+                showError('Removed from library');
+            } else {
+                showError('Failed to remove from library');
+            }
+        } else {
+            // Add to library
+            const result = await apiCall('/api/library/add/', 'POST', {
+                movie_id: movie.id,
+                movie_data: {
+                    id: movie.id,
+                    title: movie.title,
+                    year: movie.year,
+                    poster: movie.poster,
+                    rating: movie.rating,
+                    desc: movie.desc,
+                    lang: movie.lang
+                }
+            });
+            
+            if (result.success) {
+                if (btn) btn.classList.add('active');
+                showError('Added to library');
+            } else {
+                showError('Failed to add to library');
+            }
+        }
+    } catch (err) {
+        console.error('toggleLibrary error:', err);
+        showError('Failed to update library');
+    }
+}
+
+// Check if movie is in user's lists and update button states
+async function updateButtonStates(movieId) {
+    if (!window.IS_AUTHENTICATED || !movieId) return;
+    
+    try {
+        // Fetch user's lists
+        const [favResult, watchResult, libResult] = await Promise.all([
+            apiCall('/api/favorites/'),
+            apiCall('/api/watch-later/'),
+            apiCall('/api/library/')
+        ]);
+        
+        // Check if movie is in each list
+        const isFavorited = favResult.favorites?.some(m => m.id == movieId);
+        const isInWatchLater = watchResult.watch_later?.some(m => m.id == movieId);
+        const isInLibrary = libResult.library?.some(m => m.id == movieId);
+        
+        // Update button states
+        const favBtn = document.getElementById('qFav');
+        const watchBtn = document.getElementById('qWatch');
+        const libBtn = document.getElementById('qLibrary');
+        
+        if (favBtn) {
+            const icon = favBtn.querySelector('.btn-icon');
+            if (isFavorited) {
+                favBtn.classList.add('active');
+                if (icon) icon.textContent = '★';
+            } else {
+                favBtn.classList.remove('active');
+                if (icon) icon.textContent = '☆';
+            }
+        }
+        
+        if (watchBtn) {
+            if (isInWatchLater) {
+                watchBtn.classList.add('active');
+            } else {
+                watchBtn.classList.remove('active');
+            }
+        }
+        
+        if (libBtn) {
+            if (isInLibrary) {
+                libBtn.classList.add('active');
+            } else {
+                libBtn.classList.remove('active');
+            }
+        }
+    } catch (err) {
+        console.error('updateButtonStates error:', err);
+    }
 }
 
 // Person profile modal functions
