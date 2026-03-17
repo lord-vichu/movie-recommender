@@ -1,4 +1,4 @@
-# robots.txt for MovieFinder Landing Page
+# robots.txt for CINE-M-AURA Landing Page
 
 User-agent: *
 Allow: /

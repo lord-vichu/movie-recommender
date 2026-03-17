@@ -11,6 +11,7 @@ from .models import Favorite, WatchLater, Library, UserRating
 import json
 import urllib.parse
 import random
+import time
 
 try:
     from Levenshtein import ratio as levenshtein_ratio
@@ -23,6 +24,41 @@ except ImportError:
         if a in b or b in a:
             return 0.8
         return 0.0
+
+
+DEFAULT_HTTP_HEADERS = {
+    'User-Agent': 'CINE-M-AURA/1.0 (local development)',
+    'Accept': 'application/json, text/plain, */*',
+    'Accept-Language': 'en-US,en;q=0.9',
+}
+
+
+def safe_external_get(url, params=None, timeout=10, retries=2, headers=None):
+    merged_headers = DEFAULT_HTTP_HEADERS.copy()
+    if headers:
+        merged_headers.update(headers)
+
+    retry_status_codes = {429, 500, 502, 503, 504}
+    for attempt in range(retries + 1):
+        try:
+            response = requests.get(
+                url,
+                params=params,
+                headers=merged_headers,
+                timeout=timeout
+            )
+
+            if response.status_code in retry_status_codes and attempt < retries:
+                time.sleep(0.5 * (attempt + 1))
+                continue
+
+            return response
+        except requests.RequestException:
+            if attempt < retries:
+                time.sleep(0.5 * (attempt + 1))
+                continue
+
+    return None
 
 
 def get_mock_movies(count=20, genre=None, language=None, search_query=None):
@@ -132,12 +168,12 @@ def get_wikipedia_summary(search_term, wiki_lang='en'):
         wiki_url = f"https://{wiki_lang}.wikipedia.org/api/rest_v1/page/summary/"
         encoded_term = urllib.parse.quote(search_term)
         
-        response = requests.get(
+        response = safe_external_get(
             f"{wiki_url}{encoded_term}",
             timeout=5
         )
-        
-        if response.status_code == 200:
+
+        if response and response.status_code == 200:
             data = response.json()
             return {
                 'title': data.get('title', ''),
@@ -210,14 +246,16 @@ def search_wikipedia_movies(query, count=10, language_code='en'):
                         'format': 'json'
                     }
                     
-                    response = requests.get(search_url, params=search_params, timeout=10)
-                    if response.status_code != 200:
+                    response = safe_external_get(search_url, params=search_params, timeout=10)
+                    if not response or response.status_code != 200:
                         continue
                     
                     search_results = response.json()
                     titles = search_results[1] if len(search_results) > 1 else []
+                    descriptions = search_results[2] if len(search_results) > 2 else []
+                    urls = search_results[3] if len(search_results) > 3 else []
                     
-                    for title in titles:
+                    for idx, title in enumerate(titles):
                         if len(movies) >= count:
                             break
                             
@@ -236,34 +274,29 @@ def search_wikipedia_movies(query, count=10, language_code='en'):
                         if is_movie_related:
                             seen_titles.add(title.lower())
                             
-                            try:
-                                wiki_data = get_wikipedia_summary(title, wiki_lang)
-                                if wiki_data and wiki_data.get('extract'):
-                                    import re
-                                    year_match = re.search(r'\((\d{4})', title)
-                                    year = int(year_match.group(1)) if year_match else None
-                                    
-                                    clean_title = wiki_data.get('title', title)
-                                    clean_title = re.sub(r'\s*\(.*?\)\s*', '', clean_title)
-                                    clean_title = clean_title.replace(' film', '').replace(' movie', '').strip()
-                                    
-                                    movies.append({
-                                        'id': f"wiki_{title.replace(' ', '_')}",
-                                        'title': clean_title,
-                                        'year': year,
-                                        'genres': [],
-                                        'lang': wiki_lang,  # Set language based on Wikipedia source
-                                        'desc': wiki_data.get('extract', 'No description available.'),
-                                        'poster': wiki_data.get('thumbnail'),
-                                        'rating': None,
-                                        'backdrop': wiki_data.get('thumbnail'),
-                                        'source': 'wikipedia',
-                                        'wiki_url': wiki_data.get('url', ''),
-                                        'wiki_lang': wiki_lang  # Track which Wikipedia this came from
-                                    })
-                            except Exception as detail_err:
-                                print(f"Error getting details for '{title}': {detail_err}")
-                                continue
+                            import re
+                            year_match = re.search(r'\((\d{4})', title)
+                            year = int(year_match.group(1)) if year_match else None
+
+                            clean_title = re.sub(r'\s*\(.*?\)\s*', '', title)
+                            clean_title = clean_title.replace(' film', '').replace(' movie', '').strip()
+                            description = descriptions[idx] if idx < len(descriptions) else ''
+                            article_url = urls[idx] if idx < len(urls) else ''
+
+                            movies.append({
+                                'id': f"wiki_{title.replace(' ', '_')}",
+                                'title': clean_title,
+                                'year': year,
+                                'genres': [],
+                                'lang': wiki_lang,
+                                'desc': description or 'No description available.',
+                                'poster': None,
+                                'rating': None,
+                                'backdrop': None,
+                                'source': 'wikipedia',
+                                'wiki_url': article_url,
+                                'wiki_lang': wiki_lang
+                            })
                                 
                 except Exception as search_err:
                     print(f"Wikipedia search error for '{search_term}': {search_err}")
@@ -291,8 +324,8 @@ def search_wikipedia_movies(query, count=10, language_code='en'):
                             'format': 'json'
                         }
                         
-                        cat_response = requests.get(search_url, params=category_params, timeout=10)
-                        if cat_response.status_code == 200:
+                        cat_response = safe_external_get(search_url, params=category_params, timeout=10)
+                        if cat_response and cat_response.status_code == 200:
                             cat_data = cat_response.json()
                             members = cat_data.get('query', {}).get('categorymembers', [])
                             
@@ -306,35 +339,27 @@ def search_wikipedia_movies(query, count=10, language_code='en'):
                                 
                                 seen_titles.add(member_title.lower())
                                 
-                                try:
-                                    wiki_data = get_wikipedia_summary(member_title, wiki_lang)
-                                    
-                                    if wiki_data and wiki_data.get('extract'):
-                                        import re
-                                        year_match = re.search(r'\((\d{4})', member_title)
-                                        year = int(year_match.group(1)) if year_match else None
-                                        
-                                        clean_title = wiki_data.get('title', member_title)
-                                        clean_title = re.sub(r'\s*\(.*?\)\s*', '', clean_title)
-                                        clean_title = clean_title.replace(' film', '').replace(' movie', '').strip()
-                                        
-                                        movies.append({
-                                            'id': f"wiki_{member_title.replace(' ', '_')}",
-                                            'title': clean_title,
-                                            'year': year,
-                                            'genres': [],
-                                            'lang': wiki_lang,  # Set language based on Wikipedia source
-                                            'desc': wiki_data.get('extract', 'No description available.'),
-                                            'poster': wiki_data.get('thumbnail'),
-                                            'rating': None,
-                                            'backdrop': wiki_data.get('thumbnail'),
-                                            'source': 'wikipedia',
-                                            'wiki_url': wiki_data.get('url', ''),
-                                            'wiki_lang': wiki_lang  # Track which Wikipedia this came from
-                                        })
-                                except Exception as detail_err:
-                                    print(f"Error getting category member details: {detail_err}")
-                                    continue
+                                import re
+                                year_match = re.search(r'\((\d{4})', member_title)
+                                year = int(year_match.group(1)) if year_match else None
+
+                                clean_title = re.sub(r'\s*\(.*?\)\s*', '', member_title)
+                                clean_title = clean_title.replace(' film', '').replace(' movie', '').strip()
+
+                                movies.append({
+                                    'id': f"wiki_{member_title.replace(' ', '_')}",
+                                    'title': clean_title,
+                                    'year': year,
+                                    'genres': [],
+                                    'lang': wiki_lang,
+                                    'desc': 'From Wikipedia category listing.',
+                                    'poster': None,
+                                    'rating': None,
+                                    'backdrop': None,
+                                    'source': 'wikipedia',
+                                    'wiki_url': f"https://{wiki_lang}.wikipedia.org/wiki/{urllib.parse.quote(member_title.replace(' ', '_'))}",
+                                    'wiki_lang': wiki_lang
+                                })
                                     
                     except Exception as cat_err:
                         print(f"Wikipedia category search error for '{cat_name}': {cat_err}")
@@ -636,11 +661,38 @@ def discover_movies(request):
         }
         
         movies = []
+
+        wiki_lang_codes = {
+            'English': 'en', 'Hindi': 'hi', 'Malayalam': 'ml',
+            'Tamil': 'ta', 'Korean': 'ko'
+        }
+
+        def detect_search_language(query_text, selected_language):
+            if selected_language in wiki_lang_codes:
+                return wiki_lang_codes[selected_language], selected_language.lower(), True
+
+            query_lower = (query_text or '').lower()
+            language_keywords = {
+                'Malayalam': ['malayalam', 'malayali'],
+                'Tamil': ['tamil', 'kollywood'],
+                'Hindi': ['hindi', 'bollywood'],
+                'Korean': ['korean', 'k-movie', 'kmovie']
+            }
+
+            for language_name, keywords in language_keywords.items():
+                if any(keyword in query_lower for keyword in keywords):
+                    return wiki_lang_codes[language_name], language_name.lower(), True
+
+            if 'any language' in query_lower or 'all language' in query_lower:
+                return 'en', 'any language', True
+
+            return 'en', 'english', False
         
         # If there's a specific search query, use aggressive fuzzy matching
         if search_query:
             tmdb_results = []
             search_terms = [search_query]
+            search_wiki_lang, search_lang_name, prefer_wikipedia = detect_search_language(search_query, language)
             
             # Generate search variations for better matching
             query_lower = search_query.lower()
@@ -683,7 +735,7 @@ def discover_movies(request):
                 try:
                     # Search multiple pages for each term
                     for page in range(1, 3):  # Search 2 pages per term
-                        search_response = requests.get(
+                        search_response = safe_external_get(
                             f'{settings.TMDB_BASE_URL}/search/movie',
                             params={
                                 'api_key': settings.TMDB_API_KEY,
@@ -693,6 +745,10 @@ def discover_movies(request):
                             timeout=10
                         )
                         
+                        if not search_response:
+                            tmdb_available = False
+                            break
+
                         if search_response.status_code == 200:
                             search_data = search_response.json()
                             results = search_data.get('results', [])
@@ -756,10 +812,32 @@ def discover_movies(request):
                     'match_score': round(similarity * 100, 1)  # Add match score for debugging
                 })
             
-            # Always add Wikipedia results for broader coverage
-            if len(movies) < count:
-                wiki_movies = search_wikipedia_movies(search_query, count - len(movies), 'en')
-                movies.extend(wiki_movies)
+            # Use Wikipedia more aggressively for language-intent searches.
+            # Keep Wikipedia results first so they are not hidden by TMDb slicing.
+            wiki_movies = []
+            if prefer_wikipedia:
+                wiki_movies.extend(search_wikipedia_movies(search_query, count * 2, search_wiki_lang))
+
+                if len(wiki_movies) < count:
+                    wiki_movies.extend(search_wikipedia_movies(f"{search_lang_name} movies", count, search_wiki_lang))
+                if len(wiki_movies) < count:
+                    wiki_movies.extend(search_wikipedia_movies(f"{search_lang_name} cinema", count, search_wiki_lang))
+            elif len(movies) < count:
+                wiki_movies.extend(search_wikipedia_movies(search_query, count - len(movies), search_wiki_lang))
+
+            if wiki_movies:
+                combined_movies = []
+                seen_movie_keys = set()
+                ordered_candidates = wiki_movies + movies if prefer_wikipedia else movies + wiki_movies
+
+                for movie in ordered_candidates:
+                    movie_key = (movie.get('source'), str(movie.get('id')), (movie.get('title') or '').lower())
+                    if movie_key in seen_movie_keys:
+                        continue
+                    seen_movie_keys.add(movie_key)
+                    combined_movies.append(movie)
+
+                movies = combined_movies
         else:
             # Regular discover mode (no specific search query)
             # Build API URL
@@ -797,12 +875,16 @@ def discover_movies(request):
             try:
                 for page in range(1, pages + 1):
                     params['page'] = page
-                    response = requests.get(
+                    response = safe_external_get(
                         f'{settings.TMDB_BASE_URL}/discover/movie',
                         params=params,
                         timeout=10
                     )
                     
+                    if not response:
+                        tmdb_available = False
+                        break
+
                     if response.status_code == 200:
                         data = response.json()
                         all_movies.extend(data.get('results', []))
@@ -826,32 +908,27 @@ def discover_movies(request):
                     'source': 'tmdb'
                 })
             
-            # Always try to supplement with Wikipedia if we don't have enough movies
+            # Always try to supplement with Wikipedia if we don't have enough movies,
+            # and ALWAYS use Wikipedia when a specific language filter is selected.
             remaining_count = count - len(movies)
             print(f"TMDb returned {len(movies)} movies, need {remaining_count} more")
-            
-            # If TMDb is completely unavailable or we need more movies, use Wikipedia
-            if not tmdb_available or remaining_count > 0:
-                # ALWAYS search Wikipedia for language-specific queries to ensure we get 20 movies
+
+            wiki_movies_collected = []
+            force_language_wiki = language != 'Any'
+
+            if force_language_wiki or not tmdb_available or remaining_count > 0:
                 if language != 'Any':
-                    # Create language-specific search queries for Wikipedia
                     language_names = {
                         'English': 'english', 'Hindi': 'hindi', 'Malayalam': 'malayalam',
                         'Tamil': 'tamil', 'Korean': 'korean'
                     }
-                    # Map to Wikipedia language codes
-                    wiki_lang_codes = {
-                        'English': 'en', 'Hindi': 'hi', 'Malayalam': 'ml',
-                        'Tamil': 'ta', 'Korean': 'ko'
-                    }
+
                     if language in language_names:
                         lang_name = language_names[language]
                         wiki_lang_code = wiki_lang_codes.get(language, 'en')
-                        # ALWAYS request MORE than needed from Wikipedia to ensure we get enough
-                        wiki_count_needed = max(count * 2, remaining_count * 2)  # Request double to ensure we get enough
+                        wiki_count_needed = max(count, max(1, remaining_count) * 2)
                         print(f"Searching Wikipedia ({wiki_lang_code}) for {wiki_count_needed} {lang_name} movies")
-                        
-                        # Try multiple search terms and KEEP ADDING until we have enough
+
                         search_terms = [
                             lang_name,
                             f"{lang_name} cinema",
@@ -859,41 +936,55 @@ def discover_movies(request):
                             f"{lang_name}-language",
                             f"{lang_name} movies",
                         ]
-                        
+
                         for search_term in search_terms:
-                            if len(movies) >= count:
+                            if len(wiki_movies_collected) >= count:
                                 break
-                            # Request MORE from each search to ensure we get enough, pass language code
                             wiki_movies = search_wikipedia_movies(search_term, wiki_count_needed, wiki_lang_code)
                             print(f"Wikipedia search '{search_term}' returned {len(wiki_movies)} movies")
-                            movies.extend(wiki_movies)
-                    
-                    print(f"After Wikipedia: Total {len(movies)} movies")
-                
+                            wiki_movies_collected.extend(wiki_movies)
+
                 # If genre was selected and we still need more, search Wikipedia
-                if len(movies) < count and selected_genre_name and selected_genre_name != 'Any':
-                    remaining_after_language = count - len(movies)
-                    wiki_query = f"{selected_genre_name.lower()}"
-                    print(f"Searching Wikipedia for {remaining_after_language} {wiki_query} movies")
-                    wiki_movies = search_wikipedia_movies(wiki_query, remaining_after_language * 2, 'en')
-                    movies.extend(wiki_movies)
-                
+                if selected_genre_name and selected_genre_name != 'Any':
+                    genre_wiki_needed = max(count - len(wiki_movies_collected), max(remaining_count, 0))
+                    if genre_wiki_needed > 0:
+                        wiki_query = f"{selected_genre_name.lower()}"
+                        print(f"Searching Wikipedia for {genre_wiki_needed} {wiki_query} movies")
+                        wiki_movies = search_wikipedia_movies(wiki_query, genre_wiki_needed * 2, 'en')
+                        wiki_movies_collected.extend(wiki_movies)
+
                 # If still no movies, provide some default Wikipedia content
-                if len(movies) == 0:
+                if len(movies) == 0 and len(wiki_movies_collected) == 0:
                     print("No movies from TMDb or filters, getting default Wikipedia movies")
                     default_searches = ['popular films', '2024 films', 'cinema']
                     for search_term in default_searches:
-                        if len(movies) >= count:
+                        if len(wiki_movies_collected) >= count:
                             break
                         wiki_movies = search_wikipedia_movies(search_term, count, 'en')
-                        movies.extend(wiki_movies)
+                        wiki_movies_collected.extend(wiki_movies)
+
+            if wiki_movies_collected:
+                combined_movies = []
+                seen_movie_keys = set()
+                ordered_candidates = wiki_movies_collected + movies if force_language_wiki else movies + wiki_movies_collected
+
+                for movie in ordered_candidates:
+                    movie_key = (movie.get('source'), str(movie.get('id')), (movie.get('title') or '').lower())
+                    if movie_key in seen_movie_keys:
+                        continue
+                    seen_movie_keys.add(movie_key)
+                    combined_movies.append(movie)
+
+                movies = combined_movies
         
         print(f"Final movie count: {len(movies)}")
         
-        # If we still have no movies after all attempts, use mock data as final fallback
+        # Do not return mock data from API endpoints.
         if len(movies) == 0:
-            print("All external APIs failed, using mock data")
-            movies = get_mock_movies(count, genre, language, search_query)
+            return JsonResponse(
+                {'error': 'No movies available from TMDb/Wikipedia right now. Please try again in a moment.'},
+                status=503
+            )
         
         return JsonResponse({'movies': movies[:count]})  # Limit to requested count
     
@@ -922,13 +1013,13 @@ def get_trending(request):
         
         # Try to get TMDb trending movies
         try:
-            response = requests.get(
+            response = safe_external_get(
                 f'{settings.TMDB_BASE_URL}/trending/movie/day',
                 params={'api_key': settings.TMDB_API_KEY},
                 timeout=10
             )
             
-            if response.status_code == 200:
+            if response and response.status_code == 200:
                 data = response.json()
                 
                 for movie in data.get('results', [])[:15]:
@@ -982,10 +1073,12 @@ def get_trending(request):
         except Exception as wiki_err:
             print(f"Wikipedia trending fetch error: {wiki_err}")
         
-        # If still no movies, use mock data as final fallback
+        # Do not return mock data from API endpoints.
         if len(movies) == 0:
-            print("All APIs failed for trending, using mock data")
-            movies = get_mock_movies(20)
+            return JsonResponse(
+                {'error': 'Trending is temporarily unavailable from external providers. Please retry shortly.'},
+                status=503
+            )
         
         return JsonResponse({'trending': movies[:20]})
     
@@ -1000,7 +1093,7 @@ def get_movie_details(request, movie_id):
     try:
         # Try to get movie details from TMDb
         try:
-            response = requests.get(
+            response = safe_external_get(
                 f'{settings.TMDB_BASE_URL}/movie/{movie_id}',
                 params={
                     'api_key': settings.TMDB_API_KEY,
@@ -1009,6 +1102,9 @@ def get_movie_details(request, movie_id):
                 timeout=10
             )
             
+            if not response:
+                return JsonResponse({'error': 'Unable to fetch movie details. TMDb API is unavailable.'}, status=503)
+
             if response.status_code != 200:
                 return JsonResponse({'error': 'Movie not found'}, status=404)
             
@@ -1101,7 +1197,7 @@ def get_person_details(request, person_id):
     try:
         # Try to get person details from TMDb
         try:
-            response = requests.get(
+            response = safe_external_get(
                 f'{settings.TMDB_BASE_URL}/person/{person_id}',
                 params={
                     'api_key': settings.TMDB_API_KEY,
@@ -1110,6 +1206,9 @@ def get_person_details(request, person_id):
                 timeout=10
             )
             
+            if not response:
+                return JsonResponse({'error': 'Unable to fetch person details. TMDb API is unavailable.'}, status=503)
+
             if response.status_code != 200:
                 return JsonResponse({'error': 'Person not found'}, status=404)
             

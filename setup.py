@@ -1,5 +1,5 @@
 """
-Quick setup script for Movie Recommender Django app
+Quick setup script for CINE-M-AURA Django app
 Run this after activating your virtual environment
 """
 import os
@@ -15,7 +15,7 @@ def run_command(command):
 
 def main():
     print("=" * 60)
-    print("Movie Recommender Django App - Setup Script")
+    print("CINE-M-AURA Django App - Setup Script")
     print("=" * 60)
     
     # Check if we're in the right directory

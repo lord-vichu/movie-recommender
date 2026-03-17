@@ -2,7 +2,7 @@
 
 ## ✅ What's Been Prepared
 
-Your Movie Recommender app is now **deployment-ready**! Here's what's been configured:
+Your CINE-M-AURA app is now **deployment-ready**! Here's what's been configured:
 
 ### Files Created
 - ✅ `Procfile` - Tells hosting platforms how to run your app

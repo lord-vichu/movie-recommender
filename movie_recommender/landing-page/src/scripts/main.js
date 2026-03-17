@@ -1,4 +1,4 @@
-// MovieFinder Landing Page JavaScript
+// CINE-M-AURA Landing Page JavaScript
 document.addEventListener('DOMContentLoaded', function() {
     
     // Hide page loader
@@ -338,5 +338,5 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    console.log('🎬 MovieFinder Landing Page Loaded Successfully!');
+    console.log('🎬 CINE-M-AURA Landing Page Loaded Successfully!');
 });

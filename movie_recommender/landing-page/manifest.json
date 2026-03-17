@@ -1,6 +1,6 @@
 {
-  "name": "MovieFinder - Movie Discovery Platform",
-  "short_name": "MovieFinder",
+  "name": "CINE-M-AURA - Movie Discovery Platform",
+  "short_name": "CINE-M-AURA",
   "description": "Discover your next favorite movie with personalized recommendations powered by AI",
   "start_url": "/",
   "display": "standalone",

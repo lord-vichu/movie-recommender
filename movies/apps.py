@@ -23,7 +23,7 @@ class MoviesConfig(AppConfig):
                     site = Site.objects.get_or_create(id=1)[0]
                     if site.domain != domain:
                         site.domain = domain
-                        site.name = 'Movie Recommender'
+                        site.name = 'CINE-M-AURA'
                         site.save()
             except Exception:
                 pass  # Fail silently during migrations or if database isn't ready

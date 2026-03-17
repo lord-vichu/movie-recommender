@@ -303,7 +303,7 @@ After deployment, verify:
 
 ## 🚀 You're Live!
 
-Once deployed, share your movie recommender:
+Once deployed, share your CINE-M-AURA app:
 ```
 https://YOUR-APP-NAME.onrender.com
 ```
@@ -330,7 +330,7 @@ https://YOUR-APP-NAME.onrender.com
 
 ## 🎉 Congratulations!
 
-Your Movie Recommender is now live on the internet!
+Your CINE-M-AURA app is now live on the internet!
 
 **Next steps:**
 1. Test all features

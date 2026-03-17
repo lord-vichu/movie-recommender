@@ -1,6 +1,6 @@
-# MovieFinder Landing Page
+# CINE-M-AURA Landing Page
 
-A modern, responsive landing page for the MovieFinder movie recommendation platform.
+A modern, responsive landing page for the CINE-M-AURA movie recommendation platform.
 
 ## Features Added
 

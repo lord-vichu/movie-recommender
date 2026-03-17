@@ -1,4 +1,4 @@
-# Movie Recommender Django Application
+# CINE-M-AURA Django Application
 
 A Django-based movie recommendation web application using The Movie Database (TMDb) API.
 

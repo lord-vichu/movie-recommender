@@ -1,6 +1,6 @@
-# 🚀 Deployment Guide - Movie Recommender App
+# 🚀 Deployment Guide - CINE-M-AURA App
 
-Your Django Movie Recommender app is now ready for deployment! Choose one of these hosting options based on your needs.
+Your Django CINE-M-AURA app is now ready for deployment! Choose one of these hosting options based on your needs.
 
 ---
 
@@ -376,7 +376,7 @@ If you encounter issues:
 
 ## 🚀 Ready to Deploy?
 
-Choose your platform above and follow the step-by-step guide. Your movie recommender will be live in minutes!
+Choose your platform above and follow the step-by-step guide. Your CINE-M-AURA app will be live in minutes!
 
 **Quick Start with Render:**
 ```bash

@@ -1,4 +1,4 @@
-// Movie Recommender Django App - Client Side JavaScript
+// CINE-M-AURA Django App - Client Side JavaScript
 'use strict';
 
 // Helper function to get CSRF token
@@ -43,6 +43,11 @@ const trendingBtn = document.getElementById('trendingBtn');
 const resultsEl = document.getElementById('results');
 const errorContainer = document.getElementById('errorContainer');
 const themeToggleBtn = document.getElementById('themeToggle');
+
+if (searchBtn) {
+    searchBtn.textContent = 'Search';
+    searchBtn.setAttribute('aria-label', 'Search');
+}
 
 console.log('DOM Elements loaded:', {
     genreEl: !!genreEl,
@@ -1353,5 +1358,5 @@ if (window.IS_AUTHENTICATED && window.USERNAME) {
     }
 }
 
-console.log('✅ Movie Recommender loaded successfully!');
+console.log('✅ CINE-M-AURA loaded successfully!');
 console.log('🎬 New UI features initialized');

@@ -132,7 +132,7 @@ After deployment:
 
 ## 🎉 Success!
 
-Your Movie Recommender will be live at:
+Your CINE-M-AURA app will be live at:
 ```
 https://YOUR-APP-NAME.onrender.com
 ```

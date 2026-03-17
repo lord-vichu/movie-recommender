@@ -1,12 +1,12 @@
 # Google OAuth Setup Guide
 
-This guide will help you set up Google OAuth authentication for your Movie Recommender app.
+This guide will help you set up Google OAuth authentication for your CINE-M-AURA app.
 
 ## Step 1: Create a Google Cloud Project
 
 1. Go to [Google Cloud Console](https://console.cloud.google.com/)
 2. Click **Select a project** → **NEW PROJECT**
-3. Enter a project name (e.g., "Movie Recommender")
+3. Enter a project name (e.g., "CINE-M-AURA")
 4. Click **CREATE**
 
 ## Step 2: Enable Google+ API (OAuth Consent)
@@ -15,7 +15,7 @@ This guide will help you set up Google OAuth authentication for your Movie Recom
 2. Select **External** user type (unless you have a Google Workspace)
 3. Click **CREATE**
 4. Fill in the required fields:
-   - **App name**: Movie Recommender
+   - **App name**: CINE-M-AURA
    - **User support email**: Your email
    - **Developer contact email**: Your email
 5. Click **SAVE AND CONTINUE**
@@ -28,7 +28,7 @@ This guide will help you set up Google OAuth authentication for your Movie Recom
 1. Go to **APIs & Services** → **Credentials**
 2. Click **+ CREATE CREDENTIALS** → **OAuth client ID**
 3. Select **Application type**: **Web application**
-4. Enter a name (e.g., "Movie Recommender Web Client")
+4. Enter a name (e.g., "CINE-M-AURA Web Client")
 5. Add **Authorized redirect URIs**:
    ```
    http://127.0.0.1:8000/accounts/google/login/callback/
