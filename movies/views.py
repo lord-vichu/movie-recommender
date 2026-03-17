@@ -411,6 +411,103 @@ def search_wikipedia_movies(query, count=10, language_code='en'):
         return []
 
 
+def search_wikipedia_language_movies(language_name, count=20):
+    """Fetch movie pages from language-specific Wikipedia film categories (higher quality than broad search)."""
+    try:
+        import re
+
+        lang_to_code = {
+            'English': 'en',
+            'Hindi': 'hi',
+            'Malayalam': 'ml',
+            'Tamil': 'ta',
+            'Korean': 'ko',
+        }
+
+        category_map = {
+            'English': ['English-language films'],
+            'Hindi': ['Hindi-language films', 'Hindi films'],
+            'Malayalam': ['Malayalam-language films', 'Malayalam films'],
+            'Tamil': ['Tamil-language films', 'Tamil films'],
+            'Korean': ['Korean-language films', 'South Korean films'],
+        }
+
+        if language_name not in category_map:
+            return []
+
+        wiki_lang = 'en'
+        movies = []
+        seen_titles = set()
+        search_url = f"https://{wiki_lang}.wikipedia.org/w/api.php"
+
+        for category_name in category_map[language_name]:
+            if len(movies) >= count:
+                break
+
+            params = {
+                'action': 'query',
+                'list': 'categorymembers',
+                'cmtitle': f'Category:{category_name}',
+                'cmnamespace': 0,
+                'cmtype': 'page',
+                'cmlimit': min(max(count * 4, 50), 500),
+                'format': 'json',
+            }
+
+            response = safe_external_get(search_url, params=params, timeout=10)
+            if not response or response.status_code != 200:
+                continue
+
+            members = response.json().get('query', {}).get('categorymembers', [])
+            for member in members:
+                if len(movies) >= count:
+                    break
+
+                title = (member.get('title') or '').strip()
+                title_lower = title.lower()
+                if not title or title_lower in seen_titles:
+                    continue
+
+                if ('list of' in title_lower or
+                    'lists of' in title_lower or
+                        re.search(r'films? of \d{4}', title_lower) or
+                        'awards' in title_lower or
+                        'filmfare' in title_lower or
+                    'cinema of' in title_lower or
+                    'pornography' in title_lower or
+                    'film movement' in title_lower or
+                    'movement' in title_lower):
+                    continue
+
+                seen_titles.add(title_lower)
+                year_match = re.search(r'\((\d{4})', title)
+                year = int(year_match.group(1)) if year_match else None
+
+                clean_title = re.sub(r'\s*\((\d{4})\s+film\)\s*', '', title, flags=re.IGNORECASE).strip()
+                if clean_title == title:
+                    clean_title = re.sub(r'\s*\((\d{4})\)\s*', '', title).strip()
+
+                movies.append({
+                    'id': f"wiki_{title.replace(' ', '_')}",
+                    'title': clean_title,
+                    'year': year,
+                    'genres': [],
+                    'lang': lang_to_code.get(language_name, 'en'),
+                    'desc': f"From Wikipedia category: {category_name}",
+                    'poster': None,
+                    'rating': None,
+                    'backdrop': None,
+                    'source': 'wikipedia',
+                    'wiki_url': f"https://en.wikipedia.org/wiki/{urllib.parse.quote(title.replace(' ', '_'))}",
+                    'wiki_lang': 'en',
+                })
+
+        return movies[:count]
+    except Exception as error:
+        print(f"Wikipedia language category search error: {error}")
+        return []
+
+
 def landing(request):
     """Landing page view - shown to non-authenticated users"""
     if request.user.is_authenticated:
@@ -965,22 +1062,32 @@ def discover_movies(request):
                     if language in language_names:
                         lang_name = language_names[language]
                         wiki_lang_code = wiki_lang_codes.get(language, 'en')
+                        fallback_wiki_lang = 'en'
                         wiki_count_needed = max(count, max(1, remaining_count) * 2)
                         print(f"Searching Wikipedia ({wiki_lang_code}) for {wiki_count_needed} {lang_name} movies")
 
-                        search_terms = [
-                            f"{lang_name} film",
-                            f"{lang_name} films",
-                            f"{lang_name} movie",
-                            f"{lang_name}-language",
-                            f"{lang_name} movies",
-                            f"{lang_name} cinema",
-                        ]
+                        # Priority 1: high-quality category-based pages.
+                        category_movies = search_wikipedia_language_movies(language, wiki_count_needed)
+                        print(f"Wikipedia category search for {language} returned {len(category_movies)} movies")
+                        wiki_movies_collected.extend(category_movies)
+
+                        # If category lookup produced movies, prefer quality over noisy broad searches.
+                        if len(wiki_movies_collected) > 0:
+                            search_terms = []
+                        else:
+                            search_terms = [
+                                f"{lang_name} film",
+                                f"{lang_name} films",
+                                f"{lang_name} movie",
+                                f"{lang_name}-language",
+                                f"{lang_name} movies",
+                                f"{lang_name} cinema",
+                            ]
 
                         for search_term in search_terms:
                             if len(wiki_movies_collected) >= count:
                                 break
-                            wiki_movies = search_wikipedia_movies(search_term, wiki_count_needed, wiki_lang_code)
+                            wiki_movies = search_wikipedia_movies(search_term, wiki_count_needed, fallback_wiki_lang)
                             print(f"Wikipedia search '{search_term}' returned {len(wiki_movies)} movies")
                             wiki_movies_collected.extend(wiki_movies)
 
