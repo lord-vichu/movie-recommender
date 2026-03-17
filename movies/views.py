@@ -197,22 +197,67 @@ def search_wikipedia_movies(query, count=10, language_code='en'):
         language_code: Wikipedia language code ('en' for English, 'ml' for Malayalam, 'ta' for Tamil, etc.)
     """
     try:
+        import re
+
         movies = []
         seen_titles = set()
+
+        index_like_terms = [
+            'list of', 'films of', 'filmography', 'cinema of', 'film industry',
+            'awards', 'category:', 'template:', 'portal:', 'disambiguation'
+        ]
+
+        non_movie_topic_terms = [
+            'committee', 'federation', 'theatre', 'theater', 'festival',
+            'society', 'studio', 'history of', 'culture of', 'cinema of'
+        ]
+
+        def is_index_page(title, description=''):
+            title_lower = (title or '').lower()
+            description_lower = (description or '').lower()
+
+            if any(term in title_lower for term in index_like_terms):
+                return True
+            if any(term in description_lower for term in ['list of', 'film industry', 'overview of', 'history of']):
+                return True
+            if any(term in title_lower for term in non_movie_topic_terms):
+                return True
+            if any(term in description_lower for term in non_movie_topic_terms):
+                return True
+            if re.search(r'films? of \d{4}', title_lower):
+                return True
+            return False
+
+        def looks_like_movie_page(title, description=''):
+            title_lower = (title or '').lower()
+            description_lower = (description or '').lower()
+
+            if is_index_page(title, description):
+                return False
+
+            if re.search(r'\(\d{4}\s+film\)', title_lower):
+                return True
+
+            # Exclude biographies/organizations even if they mention film.
+            if re.search(r'\bis an?\s+(indian\s+)?(actor|actress|director|producer|screenwriter|singer|politician|journalist|organization|association|award|festival)\b', description_lower):
+                return False
+
+            # Prefer encyclopedia-style movie summary lines.
+            return bool(re.search(r'\bis an?\b[^\.]{0,120}\b(film|movie)\b', description_lower))
         
-        # Determine which Wikipedia to search based on language hints
-        wiki_languages = ['en']  # Always search English Wikipedia
-        
-        # Add regional language Wikipedias for better coverage
+        # Determine which Wikipedia to search.
+        # Keep English first for cleaner movie metadata, then regional wiki for extra coverage.
+        wiki_languages = ['en']
+
         query_lower = query.lower()
-        if 'malayalam' in query_lower or language_code == 'ml':
-            wiki_languages.insert(0, 'ml')  # Prioritize Malayalam Wikipedia
-        elif 'tamil' in query_lower or language_code == 'ta':
-            wiki_languages.insert(0, 'ta')  # Prioritize Tamil Wikipedia
-        elif 'hindi' in query_lower or language_code == 'hi':
-            wiki_languages.insert(0, 'hi')  # Prioritize Hindi Wikipedia
-        elif 'korean' in query_lower or language_code == 'ko':
-            wiki_languages.insert(0, 'ko')  # Prioritize Korean Wikipedia
+        if ('malayalam' in query_lower or language_code == 'ml') and 'ml' not in wiki_languages:
+            wiki_languages.append('ml')
+        elif ('tamil' in query_lower or language_code == 'ta') and 'ta' not in wiki_languages:
+            wiki_languages.append('ta')
+        elif ('hindi' in query_lower or language_code == 'hi') and 'hi' not in wiki_languages:
+            wiki_languages.append('hi')
+        elif ('korean' in query_lower or language_code == 'ko') and 'ko' not in wiki_languages:
+            wiki_languages.append('ko')
         
         # Search across different language Wikipedias
         for wiki_lang in wiki_languages:
@@ -262,24 +307,15 @@ def search_wikipedia_movies(query, count=10, language_code='en'):
                         if title.lower() in seen_titles:
                             continue
                         
-                        # More lenient filtering - accept any article that might be movie-related
-                        title_lower = title.lower()
-                        
-                        # Accept if contains movie keywords OR is in a list
-                        is_movie_related = (
-                            any(keyword in title_lower for keyword in ['film', 'movie', 'cinema']) or
-                            'list of' in title_lower
-                        )
-                        
-                        if is_movie_related:
+                        if looks_like_movie_page(title, descriptions[idx] if idx < len(descriptions) else ''):
                             seen_titles.add(title.lower())
                             
-                            import re
                             year_match = re.search(r'\((\d{4})', title)
                             year = int(year_match.group(1)) if year_match else None
 
-                            clean_title = re.sub(r'\s*\(.*?\)\s*', '', title)
-                            clean_title = clean_title.replace(' film', '').replace(' movie', '').strip()
+                            clean_title = re.sub(r'\s*\((\d{4})\s+film\)\s*', '', title, flags=re.IGNORECASE).strip()
+                            if clean_title == title:
+                                clean_title = re.sub(r'\s*\((\d{4})\)\s*', '', title).strip()
                             description = descriptions[idx] if idx < len(descriptions) else ''
                             article_url = urls[idx] if idx < len(urls) else ''
 
@@ -337,14 +373,17 @@ def search_wikipedia_movies(query, count=10, language_code='en'):
                                 if member_title.lower() in seen_titles:
                                     continue
                                 
+                                if is_index_page(member_title):
+                                    continue
+
                                 seen_titles.add(member_title.lower())
-                                
-                                import re
+
                                 year_match = re.search(r'\((\d{4})', member_title)
                                 year = int(year_match.group(1)) if year_match else None
 
-                                clean_title = re.sub(r'\s*\(.*?\)\s*', '', member_title)
-                                clean_title = clean_title.replace(' film', '').replace(' movie', '').strip()
+                                clean_title = re.sub(r'\s*\((\d{4})\s+film\)\s*', '', member_title, flags=re.IGNORECASE).strip()
+                                if clean_title == member_title:
+                                    clean_title = re.sub(r'\s*\((\d{4})\)\s*', '', member_title).strip()
 
                                 movies.append({
                                     'id': f"wiki_{member_title.replace(' ', '_')}",
@@ -659,7 +698,7 @@ def discover_movies(request):
             'English': 'en', 'Hindi': 'hi', 'Malayalam': 'ml',
             'Tamil': 'ta', 'Korean': 'ko'
         }
-        
+
         movies = []
 
         wiki_lang_codes = {
@@ -930,11 +969,12 @@ def discover_movies(request):
                         print(f"Searching Wikipedia ({wiki_lang_code}) for {wiki_count_needed} {lang_name} movies")
 
                         search_terms = [
-                            lang_name,
-                            f"{lang_name} cinema",
                             f"{lang_name} film",
+                            f"{lang_name} films",
+                            f"{lang_name} movie",
                             f"{lang_name}-language",
                             f"{lang_name} movies",
+                            f"{lang_name} cinema",
                         ]
 
                         for search_term in search_terms:

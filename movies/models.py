@@ -22,6 +22,28 @@ class MovieCache(models.Model):
         return f"{self.title} ({self.year})"
 
 
+class IMDbMovie(models.Model):
+    """Local catalog built from free IMDb datasets"""
+    tconst = models.CharField(max_length=16, unique=True)
+    title = models.CharField(max_length=255)
+    original_title = models.CharField(max_length=255, blank=True)
+    year = models.IntegerField(null=True, blank=True)
+    language = models.CharField(max_length=16, default='unknown')
+    countries = models.CharField(max_length=128, blank=True)
+    genres = models.JSONField(default=list)
+    rating = models.DecimalField(max_digits=3, decimal_places=1, null=True, blank=True)
+    votes = models.IntegerField(default=0)
+    plot = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-votes', '-rating', 'title']
+
+    def __str__(self):
+        return f"{self.title} ({self.year})"
+
+
 class Favorite(models.Model):
     """User's favorite movies"""
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='favorites')

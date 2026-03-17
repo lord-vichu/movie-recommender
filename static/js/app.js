@@ -461,6 +461,7 @@ async function loadTrending() {
 // Quick view modal
 async function openQuickView(movie) {
     const overlay = document.getElementById('quickViewOverlay');
+    const qCloseBtn = document.getElementById('qClose');
     const title = document.getElementById('qTitle');
     const meta = document.getElementById('qMeta');
     const desc = document.getElementById('qDesc');
@@ -479,6 +480,19 @@ async function openQuickView(movie) {
     }
     
     overlay.style.display = 'flex';
+
+    if (qCloseBtn) {
+        qCloseBtn.onclick = (e) => {
+            e.preventDefault();
+            closeQuickView();
+        };
+    }
+
+    overlay.onclick = (e) => {
+        if (e.target === overlay) {
+            closeQuickView();
+        }
+    };
     
     // For Wikipedia movies, show Wikipedia link prominently
     if (movie.source === 'wikipedia' && movie.wiki_url) {
@@ -693,7 +707,12 @@ async function openQuickView(movie) {
     }
     
     // Setup close button
-    document.getElementById('qClose').onclick = closeQuickView;
+    if (qCloseBtn) {
+        qCloseBtn.onclick = (e) => {
+            e.preventDefault();
+            closeQuickView();
+        };
+    }
     
     // Setup action buttons (favorite, watch later, library)
     const favBtn = document.getElementById('qFav');
