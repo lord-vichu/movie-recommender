@@ -977,11 +977,8 @@ def discover_movies(request):
 
                 movies = combined_movies
 
-            # Post-filter search results by language and timeframe
-            if language != 'Any' and language in language_map:
-                lang_code = language_map[language]
-                movies = [m for m in movies if m.get('lang') == lang_code or m.get('source') == 'wikipedia']
-
+            # Post-filter search results by timeframe only.
+            # Language is already handled by routing to language-specific Wikipedia above.
             if timeframe == 'old':
                 movies = [m for m in movies if m.get('year') and m['year'] <= 2009]
             elif timeframe == 'new':
