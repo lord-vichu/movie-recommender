@@ -781,7 +781,9 @@ def discover_movies(request):
         language = request.GET.get('language', 'Any')
         timeframe = request.GET.get('timeframe', 'any')
         count = int(request.GET.get('count', 20))
-        search_query = request.GET.get('search', '').strip()  # Add search parameter
+        search_query = request.GET.get('search', '').strip()
+        cert = request.GET.get('cert', 'Any')
+        sort_by = request.GET.get('sort_by', 'none')
         
         # Genre mapping
         genre_map = {
@@ -974,6 +976,16 @@ def discover_movies(request):
                     combined_movies.append(movie)
 
                 movies = combined_movies
+
+            # Post-filter search results by language and timeframe
+            if language != 'Any' and language in language_map:
+                lang_code = language_map[language]
+                movies = [m for m in movies if m.get('lang') == lang_code or m.get('source') == 'wikipedia']
+
+            if timeframe == 'old':
+                movies = [m for m in movies if m.get('year') and m['year'] <= 2009]
+            elif timeframe == 'new':
+                movies = [m for m in movies if m.get('year') and m['year'] >= 2011]
         else:
             # Regular discover mode (no specific search query)
             # Build API URL
@@ -990,6 +1002,17 @@ def discover_movies(request):
             
             if language != 'Any' and language in language_map:
                 params['with_original_language'] = language_map[language]
+
+            # Certificate filter
+            india_certs = {'U', 'UA', 'A'}
+            us_certs = {'PG-13', 'R', 'Not Rated'}
+            if cert != 'Any':
+                if cert in india_certs:
+                    params['certification_country'] = 'IN'
+                    params['certification'] = cert
+                elif cert in us_certs:
+                    params['certification_country'] = 'US'
+                    params['certification'] = cert
             
             # Timeframe filter
             from datetime import datetime
@@ -1133,6 +1156,16 @@ def discover_movies(request):
                 status=503
             )
         
+        # Apply sort before slicing
+        if sort_by == 'year_desc':
+            movies.sort(key=lambda m: m.get('year') or 0, reverse=True)
+        elif sort_by == 'year_asc':
+            movies.sort(key=lambda m: m.get('year') or 0)
+        elif sort_by == 'rating_desc':
+            movies.sort(key=lambda m: m.get('rating') or 0, reverse=True)
+        elif sort_by == 'rating_asc':
+            movies.sort(key=lambda m: m.get('rating') or 0)
+
         return JsonResponse({'movies': movies[:count]})  # Limit to requested count
     
     except Exception as e:

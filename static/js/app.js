@@ -359,7 +359,9 @@ async function discoverMovies() {
             genre,
             language,
             timeframe,
-            count: count.toString()
+            count: count.toString(),
+            cert: certEl.value,
+            sort_by: sortBy
         });
         
         // Add search parameter if present
@@ -379,13 +381,6 @@ async function discoverMovies() {
             resultsEl.innerHTML = '';
         } else {
             let movies = result.movies || [];
-            
-            // Apply sorting
-            if (sortBy && sortBy !== 'none') {
-                movies = sortMovies(movies, sortBy);
-                console.log(`Sorted by ${sortBy}`);
-            }
-            
             renderResults(movies);
         }
     } catch (err) {
@@ -1337,8 +1332,7 @@ filterChips.forEach(chip => {
         if (advancedFilters.style.display !== 'block') {
             advancedFilters.style.display = 'block';
         }
-        // Scroll to filters
-        advancedFilters.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        discoverMovies();
     });
 });
 
