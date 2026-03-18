@@ -954,6 +954,11 @@ def discover_movies(request):
             # Keep Wikipedia results first so they are not hidden by TMDb slicing.
             wiki_movies = []
             if prefer_wikipedia:
+                # Category-based lookup is more reliable for language-specific searches
+                # (especially Malayalam/Tamil/Hindi) than plain text opensearch.
+                if language in wiki_lang_codes:
+                    wiki_movies.extend(search_wikipedia_language_movies(language, count * 2))
+
                 wiki_movies.extend(search_wikipedia_movies(search_query, count * 2, search_wiki_lang))
 
                 if len(wiki_movies) < count:
@@ -962,6 +967,11 @@ def discover_movies(request):
                     wiki_movies.extend(search_wikipedia_movies(f"{search_lang_name} cinema", count, search_wiki_lang))
             elif len(movies) < count:
                 wiki_movies.extend(search_wikipedia_movies(search_query, count - len(movies), search_wiki_lang))
+
+            # Final guardrail for language searches: if fuzzy title search misses,
+            # still return category-backed language results instead of empty payloads.
+            if prefer_wikipedia and language in wiki_lang_codes and len(wiki_movies) == 0:
+                wiki_movies.extend(search_wikipedia_language_movies(language, max(count, 20)))
 
             if wiki_movies:
                 combined_movies = []
