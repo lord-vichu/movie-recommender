@@ -70,6 +70,12 @@ The TMDb API key is configured in `movie_recommender/settings.py`. You can chang
 TMDB_API_KEY = 'your_api_key_here'
 ```
 
+Optional: add an OMDb API key to enrich missing posters/ratings/metadata when TMDb fields are unavailable.
+
+```python
+OMDB_API_KEY = 'your_omdb_api_key_here'
+```
+
 ## Project Structure
 
 ```

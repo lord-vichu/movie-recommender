@@ -12,6 +12,7 @@ import json
 import urllib.parse
 import random
 import time
+from functools import lru_cache
 
 try:
     from Levenshtein import ratio as levenshtein_ratio
@@ -59,6 +60,126 @@ def safe_external_get(url, params=None, timeout=10, retries=2, headers=None):
                 continue
 
     return None
+
+
+def parse_omdb_runtime_minutes(runtime_value):
+    if not runtime_value or runtime_value == 'N/A':
+        return None
+
+    try:
+        return int(str(runtime_value).split()[0])
+    except (ValueError, TypeError, IndexError):
+        return None
+
+
+@lru_cache(maxsize=2048)
+def get_tmdb_imdb_id(movie_id):
+    if not movie_id:
+        return None
+
+    try:
+        response = safe_external_get(
+            f'{settings.TMDB_BASE_URL}/movie/{movie_id}/external_ids',
+            params={'api_key': settings.TMDB_API_KEY},
+            timeout=8
+        )
+
+        if response and response.status_code == 200:
+            return response.json().get('imdb_id')
+    except Exception as error:
+        print(f"TMDb external IDs error for {movie_id}: {error}")
+
+    return None
+
+
+@lru_cache(maxsize=4096)
+def get_omdb_data_by_imdb_id(imdb_id):
+    omdb_api_key = getattr(settings, 'OMDB_API_KEY', '')
+    if not omdb_api_key or not imdb_id:
+        return None
+
+    try:
+        response = safe_external_get(
+            getattr(settings, 'OMDB_BASE_URL', 'https://www.omdbapi.com/'),
+            params={
+                'apikey': omdb_api_key,
+                'i': imdb_id,
+                'plot': 'short'
+            },
+            timeout=8
+        )
+
+        if not response or response.status_code != 200:
+            return None
+
+        data = response.json()
+        if data.get('Response') != 'True':
+            return None
+
+        poster = data.get('Poster')
+        if poster == 'N/A':
+            poster = None
+
+        imdb_rating = None
+        if data.get('imdbRating') and data.get('imdbRating') != 'N/A':
+            try:
+                imdb_rating = float(data.get('imdbRating'))
+            except (ValueError, TypeError):
+                imdb_rating = None
+
+        return {
+            'imdb_id': data.get('imdbID') or imdb_id,
+            'poster': poster,
+            'plot': None if data.get('Plot') == 'N/A' else data.get('Plot'),
+            'imdb_rating': imdb_rating,
+            'imdb_votes': None if data.get('imdbVotes') == 'N/A' else data.get('imdbVotes'),
+            'awards': None if data.get('Awards') == 'N/A' else data.get('Awards'),
+            'runtime': parse_omdb_runtime_minutes(data.get('Runtime')),
+            'rated': None if data.get('Rated') == 'N/A' else data.get('Rated')
+        }
+    except Exception as error:
+        print(f"OMDb lookup error for {imdb_id}: {error}")
+
+    return None
+
+
+def enrich_tmdb_movie_with_omdb(movie_payload, tmdb_movie_id=None, imdb_id=None):
+    if not movie_payload:
+        return movie_payload
+
+    omdb_api_key = getattr(settings, 'OMDB_API_KEY', '')
+    if not omdb_api_key:
+        return movie_payload
+
+    should_try_omdb = (
+        not movie_payload.get('poster') or
+        not movie_payload.get('desc') or
+        not movie_payload.get('rating')
+    )
+    if not should_try_omdb:
+        return movie_payload
+
+    if not imdb_id and tmdb_movie_id:
+        imdb_id = get_tmdb_imdb_id(tmdb_movie_id)
+
+    omdb_data = get_omdb_data_by_imdb_id(imdb_id)
+    if not omdb_data:
+        return movie_payload
+
+    if not movie_payload.get('poster') and omdb_data.get('poster'):
+        movie_payload['poster'] = omdb_data['poster']
+
+    if not movie_payload.get('desc') and omdb_data.get('plot'):
+        movie_payload['desc'] = omdb_data['plot']
+
+    if not movie_payload.get('rating') and omdb_data.get('imdb_rating'):
+        movie_payload['rating'] = omdb_data['imdb_rating']
+
+    movie_payload['imdb_id'] = omdb_data.get('imdb_id')
+    movie_payload['imdb_rating'] = omdb_data.get('imdb_rating')
+    movie_payload['imdb_votes'] = omdb_data.get('imdb_votes')
+
+    return movie_payload
 
 
 def get_mock_movies(count=20, genre=None, language=None, search_query=None):
@@ -425,10 +546,10 @@ def search_wikipedia_language_movies(language_name, count=20):
         }
 
         category_map = {
-            'English': ['English-language films'],
-            'Hindi': ['Hindi-language films', 'Hindi films'],
-            'Malayalam': ['Malayalam-language films', 'Malayalam films'],
-            'Tamil': ['Tamil-language films', 'Tamil films'],
+            'English': ['English-language films', 'American films', 'British films'],
+            'Hindi': ['Hindi-language films', 'Hindi films', 'Bollywood films', 'Indian Hindi-language films'],
+            'Malayalam': ['Malayalam-language films', 'Malayalam films', 'Malayalam cinema'],
+            'Tamil': ['Tamil-language films', 'Tamil films', 'Tamil cinema'],
             'Korean': ['Korean-language films', 'South Korean films'],
         }
 
@@ -501,6 +622,17 @@ def search_wikipedia_language_movies(language_name, count=20):
                     'wiki_url': f"https://en.wikipedia.org/wiki/{urllib.parse.quote(title.replace(' ', '_'))}",
                     'wiki_lang': 'en',
                 })
+
+        if len(movies) < count and language_name in {'Hindi', 'Malayalam', 'Tamil'}:
+            fallback_query = f"{language_name.lower()} film"
+            fallback_movies = search_wikipedia_movies(fallback_query, count - len(movies), 'en')
+            for movie in fallback_movies:
+                movie_key = (movie.get('source'), str(movie.get('id')), (movie.get('title') or '').lower())
+                existing_keys = {(m.get('source'), str(m.get('id')), (m.get('title') or '').lower()) for m in movies}
+                if movie_key not in existing_keys:
+                    movies.append(movie)
+                if len(movies) >= count:
+                    break
 
         return movies[:count]
     except Exception as error:
@@ -811,9 +943,9 @@ def discover_movies(request):
 
             query_lower = (query_text or '').lower()
             language_keywords = {
-                'Malayalam': ['malayalam', 'malayali'],
-                'Tamil': ['tamil', 'kollywood'],
-                'Hindi': ['hindi', 'bollywood'],
+                'Malayalam': ['malayalam', 'malayali', 'മലയാളം'],
+                'Tamil': ['tamil', 'kollywood', 'தமிழ்'],
+                'Hindi': ['hindi', 'bollywood', 'हिंदी'],
                 'Korean': ['korean', 'k-movie', 'kmovie']
             }
 
@@ -936,7 +1068,7 @@ def discover_movies(request):
             
             # Format TMDb results
             for similarity, movie in scored_results[:count]:
-                movies.append({
+                movie_payload = {
                     'id': movie.get('id'),
                     'title': movie.get('title') or movie.get('original_title'),
                     'year': int(movie.get('release_date', '0000')[:4]) if movie.get('release_date') else None,
@@ -948,16 +1080,27 @@ def discover_movies(request):
                     'backdrop': f"{settings.TMDB_IMAGE_BASE}{movie.get('backdrop_path')}" if movie.get('backdrop_path') else None,
                     'source': 'tmdb',
                     'match_score': round(similarity * 100, 1)  # Add match score for debugging
-                })
+                }
+
+                movies.append(enrich_tmdb_movie_with_omdb(movie_payload, tmdb_movie_id=movie.get('id')))
             
             # Use Wikipedia more aggressively for language-intent searches.
             # Keep Wikipedia results first so they are not hidden by TMDb slicing.
             wiki_movies = []
             if prefer_wikipedia:
+                inferred_language_name = {
+                    'english': 'English',
+                    'hindi': 'Hindi',
+                    'malayalam': 'Malayalam',
+                    'tamil': 'Tamil',
+                    'korean': 'Korean',
+                }.get(search_lang_name)
+                category_language = language if language in wiki_lang_codes else inferred_language_name
+
                 # Category-based lookup is more reliable for language-specific searches
                 # (especially Malayalam/Tamil/Hindi) than plain text opensearch.
-                if language in wiki_lang_codes:
-                    wiki_movies.extend(search_wikipedia_language_movies(language, count * 2))
+                if category_language:
+                    wiki_movies.extend(search_wikipedia_language_movies(category_language, count * 2))
 
                 wiki_movies.extend(search_wikipedia_movies(search_query, count * 2, search_wiki_lang))
 
@@ -965,6 +1108,10 @@ def discover_movies(request):
                     wiki_movies.extend(search_wikipedia_movies(f"{search_lang_name} movies", count, search_wiki_lang))
                 if len(wiki_movies) < count:
                     wiki_movies.extend(search_wikipedia_movies(f"{search_lang_name} cinema", count, search_wiki_lang))
+                if len(wiki_movies) < count:
+                    wiki_movies.extend(search_wikipedia_movies(f"{search_lang_name} film", count, 'en'))
+                if len(wiki_movies) < count:
+                    wiki_movies.extend(search_wikipedia_movies(f"{search_lang_name} films", count, 'en'))
             elif len(movies) < count:
                 wiki_movies.extend(search_wikipedia_movies(search_query, count - len(movies), search_wiki_lang))
 
@@ -1061,7 +1208,7 @@ def discover_movies(request):
             
             # Format movies
             for movie in all_movies[:count]:
-                movies.append({
+                movie_payload = {
                     'id': movie.get('id'),
                     'title': movie.get('title') or movie.get('original_title'),
                     'year': int(movie.get('release_date', '0000')[:4]) if movie.get('release_date') else None,
@@ -1072,7 +1219,9 @@ def discover_movies(request):
                     'rating': round(movie.get('vote_average', 0), 1) if movie.get('vote_average') else None,
                     'backdrop': f"{settings.TMDB_IMAGE_BASE}{movie.get('backdrop_path')}" if movie.get('backdrop_path') else None,
                     'source': 'tmdb'
-                })
+                }
+
+                movies.append(enrich_tmdb_movie_with_omdb(movie_payload, tmdb_movie_id=movie.get('id')))
             
             # Always try to supplement with Wikipedia if we don't have enough movies,
             # and ALWAYS use Wikipedia when a specific language filter is selected.
@@ -1220,14 +1369,16 @@ def get_trending(request):
                     seen_ids.add(movie_id)
                     seen_titles.add(movie_title)
                     
-                    movies.append({
+                    movie_payload = {
                         'id': movie_id,
                         'title': movie.get('title') or movie.get('original_title'),
                         'year': int(movie.get('release_date', '0000')[:4]) if movie.get('release_date') else None,
                         'poster': f"{settings.TMDB_IMAGE_BASE}{movie.get('poster_path')}" if movie.get('poster_path') else None,
                         'rating': round(movie.get('vote_average', 0), 1) if movie.get('vote_average') else None,
                         'source': 'tmdb'
-                    })
+                    }
+
+                    movies.append(enrich_tmdb_movie_with_omdb(movie_payload, tmdb_movie_id=movie_id))
         except Exception as tmdb_err:
             print(f"TMDb trending fetch error: {tmdb_err}")
             # Continue to Wikipedia fallback
@@ -1306,6 +1457,7 @@ def get_movie_details(request, movie_id):
             'title': movie.get('title'),
             'year': int(movie.get('release_date', '0000')[:4]) if movie.get('release_date') else None,
             'desc': movie.get('overview'),
+            'imdb_id': movie.get('imdb_id'),
             'poster': f"{settings.TMDB_IMAGE_BASE}{movie.get('poster_path')}" if movie.get('poster_path') else None,
             'backdrop': f"{settings.TMDB_IMAGE_BASE}{movie.get('backdrop_path')}" if movie.get('backdrop_path') else None,
             'rating': round(movie.get('vote_average', 0), 1),
@@ -1321,8 +1473,19 @@ def get_movie_details(request, movie_id):
             'videos': [],
             'images': [],
             'similar': [],
+            'omdb': None,
             'wikipedia': None
         }
+
+        # Optional OMDb enrichment for missing poster/overview/rating + extra metadata.
+        data = enrich_tmdb_movie_with_omdb(data, tmdb_movie_id=movie.get('id'), imdb_id=movie.get('imdb_id'))
+        omdb_data = get_omdb_data_by_imdb_id(data.get('imdb_id'))
+        if omdb_data:
+            data['omdb'] = omdb_data
+            if not data.get('runtime') and omdb_data.get('runtime'):
+                data['runtime'] = omdb_data.get('runtime')
+            if omdb_data.get('awards'):
+                data['awards'] = omdb_data.get('awards')
         
         # Try to get Wikipedia info
         movie_title = movie.get('title')

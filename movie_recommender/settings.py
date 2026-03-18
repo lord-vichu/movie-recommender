@@ -134,6 +134,8 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 TMDB_API_KEY = os.environ.get('TMDB_API_KEY', '3658d16dd2e533776cb67b728a8f5a3c')
 TMDB_BASE_URL = 'https://api.themoviedb.org/3'
 TMDB_IMAGE_BASE = 'https://image.tmdb.org/t/p/w500'
+OMDB_API_KEY = os.environ.get('OMDB_API_KEY', '')
+OMDB_BASE_URL = 'https://www.omdbapi.com/'
 
 # Django Allauth Configuration
 SITE_ID = 1
