@@ -97,6 +97,45 @@ function clearError() {
     }
 }
 
+function normalizeImageUrl(url) {
+    if (typeof url !== 'string') return '';
+    const trimmed = url.trim();
+    if (!trimmed) return '';
+
+    const lower = trimmed.toLowerCase();
+    if (lower === 'none' || lower === 'null' || lower === 'undefined') {
+        return '';
+    }
+
+    return trimmed;
+}
+
+function createPosterPlaceholder(titleText) {
+    const placeholder = document.createElement('div');
+    placeholder.className = 'poster-placeholder';
+    placeholder.style.cssText = 'width:100%;height:100%;background:var(--card);display:flex;align-items:center;justify-content:center;text-align:center;padding:20px;border-radius:8px;';
+
+    const placeholderTitle = document.createElement('div');
+    placeholderTitle.style.color = 'var(--text)';
+    placeholderTitle.textContent = titleText || 'Poster unavailable';
+
+    placeholder.appendChild(placeholderTitle);
+    return placeholder;
+}
+
+function createImageElement(src, alt, onError) {
+    const img = document.createElement('img');
+    img.src = src;
+    img.alt = alt || 'Image';
+    img.loading = 'lazy';
+
+    if (onError) {
+        img.addEventListener('error', () => onError(img), { once: true });
+    }
+
+    return img;
+}
+
 // Auth UI update
 function updateUserUI() {
     const btn = document.getElementById('signInBtn');
@@ -258,14 +297,15 @@ function renderResults(movies) {
         
         const poster = document.createElement('div');
         poster.className = 'poster';
-        if (movie.poster) {
-            const img = document.createElement('img');
-            img.src = movie.poster;
-            img.alt = movie.title;
-            img.loading = 'lazy';
+        const posterUrl = normalizeImageUrl(movie.poster);
+        if (posterUrl) {
+            const img = createImageElement(posterUrl, movie.title, () => {
+                poster.innerHTML = '';
+                poster.appendChild(createPosterPlaceholder(movie.title));
+            });
             poster.appendChild(img);
         } else {
-            poster.textContent = movie.title;
+            poster.appendChild(createPosterPlaceholder(movie.title));
         }
         
         const meta = document.createElement('div');
@@ -412,21 +452,17 @@ async function loadTrending() {
             card.style.cursor = 'pointer';
             
             // Handle poster - use placeholder if null
-            if (movie.poster) {
-                const img = document.createElement('img');
-                img.src = movie.poster;
-                img.alt = movie.title;
-                img.loading = 'lazy';
+            const posterUrl = normalizeImageUrl(movie.poster);
+            if (posterUrl) {
+                const img = createImageElement(posterUrl, movie.title, () => {
+                    card.innerHTML = '';
+                    card.appendChild(createPosterPlaceholder(movie.title));
+                    card.appendChild(title);
+                });
                 card.appendChild(img);
             } else {
-                // Create a placeholder div with movie title
-                const placeholder = document.createElement('div');
-                placeholder.className = 'poster-placeholder';
-                placeholder.style.cssText = 'width:100%;height:200px;background:var(--card);display:flex;align-items:center;justify-content:center;text-align:center;padding:20px;border-radius:8px;';
-                const placeholderTitle = document.createElement('div');
-                placeholderTitle.style.color = 'var(--text)';
-                placeholderTitle.textContent = movie.title;
-                placeholder.appendChild(placeholderTitle);
+                const placeholder = createPosterPlaceholder(movie.title);
+                placeholder.style.height = '200px';
                 card.appendChild(placeholder);
             }
             
@@ -468,11 +504,8 @@ async function openQuickView(movie) {
     meta.textContent = `${movie.lang?.toUpperCase() || ''} ${movie.rating ? '· ⭐ ' + movie.rating : ''}`;
     desc.textContent = movie.desc || '';
     
-    if (movie.poster) {
-        poster.style.backgroundImage = `url('${movie.poster}')`;
-    } else {
-        poster.style.backgroundImage = '';
-    }
+    const quickViewPosterUrl = normalizeImageUrl(movie.poster);
+    poster.style.backgroundImage = quickViewPosterUrl ? `url('${quickViewPosterUrl}')` : '';
     
     overlay.style.display = 'flex';
 
@@ -537,10 +570,10 @@ async function openQuickView(movie) {
                         const item = document.createElement('div');
                         item.className = 'cast-item';
                         
-                        const img = document.createElement('img');
-                        img.src = person.profile || '';
-                        img.alt = person.name;
-                        img.loading = 'lazy';
+                        const profileUrl = normalizeImageUrl(person.profile);
+                        const img = createImageElement(profileUrl || '/static/images/logo.svg', person.name, (failedImg) => {
+                            failedImg.src = '/static/images/logo.svg';
+                        });
                         
                         const name = document.createElement('span');
                         name.className = 'actor';
@@ -642,10 +675,10 @@ async function openQuickView(movie) {
                         const card = document.createElement('div');
                         card.className = 'similar-movie-card';
                         
-                        const img = document.createElement('img');
-                        img.src = m.poster || '';
-                        img.alt = m.title;
-                        img.loading = 'lazy';
+                        const similarPosterUrl = normalizeImageUrl(m.poster);
+                        const img = createImageElement(similarPosterUrl || '/static/images/logo.svg', m.title, (failedImg) => {
+                            failedImg.src = '/static/images/logo.svg';
+                        });
                         
                         const title = document.createElement('span');
                         title.className = 'movie-title';
@@ -1003,9 +1036,14 @@ async function openPersonProfile(personId) {
         nameEl.textContent = person.name || 'Unknown';
         
         if (pic) {
-            if (person.profile_path) {
-                pic.src = person.profile_path;
+            const personProfileUrl = normalizeImageUrl(person.profile_path);
+            if (personProfileUrl) {
+                pic.src = personProfileUrl;
                 pic.alt = person.name || 'Profile';
+                pic.onerror = () => {
+                    pic.src = '/static/images/logo.svg';
+                    pic.onerror = null;
+                };
             } else {
                 pic.src = '';
                 pic.alt = 'No image';
@@ -1067,10 +1105,10 @@ async function openPersonProfile(personId) {
                 const item = document.createElement('div');
                 item.className = 'known-item';
                 
-                const img = document.createElement('img');
-                img.src = movie.poster || '';
-                img.alt = movie.title || 'Movie';
-                img.loading = 'lazy';
+                const knownPosterUrl = normalizeImageUrl(movie.poster);
+                const img = createImageElement(knownPosterUrl || '/static/images/logo.svg', movie.title || 'Movie', (failedImg) => {
+                    failedImg.src = '/static/images/logo.svg';
+                });
                 
                 const title = document.createElement('div');
                 title.className = 'label';
